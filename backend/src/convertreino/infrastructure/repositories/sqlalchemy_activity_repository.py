@@ -52,3 +52,45 @@ class SqlAlchemyActivityRepository(ActivityRepository):
                 f"Cannot save activity for unknown user_id: {activity.user_id}"
             ) from exc
         return activity
+
+    def get_by_external_id(self, user_id: UUID, external_id: str) -> Activity | None:
+        stmt = select(ActivityModel).where(
+            ActivityModel.user_id == user_id,
+            ActivityModel.external_id == external_id,
+        )
+        model = self._session.scalar(stmt)
+        return _to_domain(model) if model is not None else None
+
+    def upsert(self, activity: Activity) -> Activity:
+        if activity.external_id is None:
+            return self.save(activity)
+
+        existing = self.get_by_external_id(activity.user_id, activity.external_id)
+        if existing is not None:
+            stmt = select(ActivityModel).where(ActivityModel.id == existing.id)
+            model = self._session.scalar(stmt)
+            if model is None:
+                raise DomainIntegrityError(
+                    f"Activity with external_id {activity.external_id} disappeared during upsert"
+                )
+            model.distance_meters = activity.distance_meters
+            model.elapsed_time_seconds = activity.elapsed_time_seconds
+            model.start_date = activity.start_date
+            model.activity_type = activity.activity_type
+            try:
+                self._session.flush()
+            except IntegrityError as exc:
+                raise DomainIntegrityError(
+                    f"Cannot upsert activity for user_id: {activity.user_id}"
+                ) from exc
+            return Activity(
+                id=existing.id,
+                user_id=activity.user_id,
+                distance_meters=activity.distance_meters,
+                elapsed_time_seconds=activity.elapsed_time_seconds,
+                start_date=activity.start_date,
+                activity_type=activity.activity_type,
+                external_id=activity.external_id,
+            )
+
+        return self.save(activity)

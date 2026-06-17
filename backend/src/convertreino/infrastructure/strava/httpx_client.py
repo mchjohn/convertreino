@@ -1,7 +1,9 @@
 import httpx
+from typing import Any
 
-from convertreino.domain.exceptions import StravaAuthError
+from convertreino.domain.exceptions import StravaApiError, StravaAuthError
 from convertreino.infrastructure.strava.client import (
+    StravaActivitySummary,
     StravaAthlete,
     StravaTokenResponse,
     expires_at_from_unix,
@@ -9,6 +11,7 @@ from convertreino.infrastructure.strava.client import (
 
 STRAVA_OAUTH_URL = "https://www.strava.com/oauth/token"
 STRAVA_ATHLETE_URL = "https://www.strava.com/api/v3/athlete"
+STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities"
 
 
 class HttpxStravaApiClient:
@@ -54,6 +57,32 @@ class HttpxStravaApiClient:
         data = response.json()
         return StravaAthlete(id=int(data["id"]))
 
+    def list_activities(
+        self,
+        access_token: str,
+        *,
+        page: int = 1,
+        per_page: int = 200,
+    ) -> list[StravaActivitySummary]:
+        try:
+            response = httpx.get(
+                STRAVA_ACTIVITIES_URL,
+                headers={"Authorization": f"Bearer {access_token}"},
+                params={"page": page, "per_page": per_page},
+                timeout=30.0,
+            )
+        except httpx.HTTPError as exc:
+            raise StravaApiError("Strava API request failed") from exc
+
+        if response.status_code in {401, 403}:
+            raise StravaAuthError("Reauthorize Strava account")
+        if response.status_code >= 500:
+            raise StravaApiError(f"Strava API unavailable: {response.status_code}")
+        if response.status_code >= 400:
+            raise StravaAuthError(f"Strava activities request failed: {response.status_code}")
+
+        return [_parse_activity_summary(item) for item in response.json()]
+
     def _request_token(self, payload: dict[str, str]) -> StravaTokenResponse:
         try:
             response = httpx.post(STRAVA_OAUTH_URL, data=payload, timeout=30.0)
@@ -74,3 +103,17 @@ class HttpxStravaApiClient:
             expires_at=expires_at_from_unix(int(data["expires_at"])),
             athlete_id=athlete_id,
         )
+
+
+def _parse_activity_summary(data: dict[str, Any]) -> StravaActivitySummary:
+    elapsed = data.get("elapsed_time")
+    moving = data.get("moving_time")
+    distance = data.get("distance")
+    return StravaActivitySummary(
+        id=int(data["id"]),
+        start_date=str(data["start_date"]),
+        type=str(data["type"]),
+        distance=float(distance) if distance is not None else 0.0,
+        elapsed_time=int(elapsed) if elapsed is not None else None,
+        moving_time=int(moving) if moving is not None else None,
+    )

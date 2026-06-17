@@ -27,6 +27,8 @@ def test_activity_repository_contract():
     # Arrange
     get_all = ActivityRepository.get_all
     save = ActivityRepository.save
+    get_by_external_id = ActivityRepository.get_by_external_id
+    upsert = ActivityRepository.upsert
 
     # Assert
     assert inspect.isabstract(ActivityRepository)
@@ -34,3 +36,8 @@ def test_activity_repository_contract():
     assert get_all.__annotations__["return"] == list[Activity]
     assert save.__annotations__["activity"] is Activity
     assert save.__annotations__["return"] is Activity
+    assert get_by_external_id.__annotations__["user_id"] is UUID
+    assert get_by_external_id.__annotations__["external_id"] is str
+    assert get_by_external_id.__annotations__["return"] == Activity | None
+    assert upsert.__annotations__["activity"] is Activity
+    assert upsert.__annotations__["return"] is Activity

@@ -1,5 +1,9 @@
-from convertreino.domain.exceptions import StravaAuthError
-from convertreino.infrastructure.strava.client import StravaAthlete, StravaTokenResponse
+from convertreino.domain.exceptions import StravaApiError, StravaAuthError
+from convertreino.infrastructure.strava.client import (
+    StravaActivitySummary,
+    StravaAthlete,
+    StravaTokenResponse,
+)
 
 
 class FakeStravaApiClient:
@@ -13,6 +17,9 @@ class FakeStravaApiClient:
         fail_exchange: bool = False,
         fail_refresh: bool = False,
         fail_server_error: bool = False,
+        activities: list[StravaActivitySummary] | None = None,
+        fail_list_auth_pages: set[int] | None = None,
+        fail_list_server_pages: set[int] | None = None,
     ) -> None:
         self._athlete_id = athlete_id
         self._access_token = access_token
@@ -21,8 +28,12 @@ class FakeStravaApiClient:
         self._fail_exchange = fail_exchange
         self._fail_refresh = fail_refresh
         self._fail_server_error = fail_server_error
+        self._activities = list(activities or [])
+        self._fail_list_auth_pages = fail_list_auth_pages or set()
+        self._fail_list_server_pages = fail_list_server_pages or set()
         self.exchange_calls: list[str] = []
         self.refresh_calls: list[str] = []
+        self.list_activities_calls: list[tuple[int, int]] = []
 
     def exchange_code(self, code: str) -> StravaTokenResponse:
         self.exchange_calls.append(code)
@@ -47,6 +58,23 @@ class FakeStravaApiClient:
 
     def get_athlete(self, access_token: str) -> StravaAthlete:
         return StravaAthlete(id=self._athlete_id)
+
+    def list_activities(
+        self,
+        access_token: str,
+        *,
+        page: int = 1,
+        per_page: int = 200,
+    ) -> list[StravaActivitySummary]:
+        self.list_activities_calls.append((page, per_page))
+        if page in self._fail_list_auth_pages:
+            raise StravaAuthError("Reauthorize Strava account")
+        if page in self._fail_list_server_pages:
+            raise StravaApiError("Strava API unavailable: 503")
+
+        start = (page - 1) * per_page
+        end = start + per_page
+        return self._activities[start:end]
 
     def _token_response(self) -> StravaTokenResponse:
         from convertreino.infrastructure.strava.client import expires_at_from_unix

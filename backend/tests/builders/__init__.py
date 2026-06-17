@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from convertreino.domain.entities.activity import Activity
 from convertreino.domain.entities.user import User
+from convertreino.infrastructure.strava.client import StravaActivitySummary
 
 
 def build_user(
@@ -42,4 +43,23 @@ def build_activity(
         start_date=start_date or datetime.now(UTC),
         activity_type=activity_type,
         external_id=external_id,
+    )
+
+
+def build_strava_activity_summary(
+    *,
+    id: int = 1,
+    distance: float = 5000.0,
+    elapsed_time: int | None = 1800,
+    moving_time: int | None = None,
+    start_date: str = "2024-01-15T10:00:00Z",
+    type: str = "Run",
+) -> StravaActivitySummary:
+    return StravaActivitySummary(
+        id=id,
+        distance=distance,
+        elapsed_time=elapsed_time,
+        moving_time=moving_time,
+        start_date=start_date,
+        type=type,
     )

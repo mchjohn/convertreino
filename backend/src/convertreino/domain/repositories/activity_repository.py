@@ -12,3 +12,11 @@ class ActivityRepository(ABC):
     @abstractmethod
     def save(self, activity: Activity) -> Activity:
         ...
+
+    @abstractmethod
+    def get_by_external_id(self, user_id: UUID, external_id: str) -> Activity | None:
+        ...
+
+    @abstractmethod
+    def upsert(self, activity: Activity) -> Activity:
+        ...
