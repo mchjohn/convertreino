@@ -4,3 +4,7 @@ class DomainValidationError(ValueError):
 
 class DomainIntegrityError(Exception):
     """Raised when a persistence operation violates domain integrity constraints."""
+
+
+class StravaAuthError(Exception):
+    """Raised when Strava OAuth or token refresh fails."""

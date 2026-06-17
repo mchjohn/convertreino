@@ -107,3 +107,31 @@ def test_get_by_id_returns_none_for_unknown_user():
 
     # Assert
     assert result is None
+
+
+def test_get_by_strava_athlete_id_returns_linked_user():
+    # Arrange
+    athlete_id = 55_555
+    user = build_user(
+        strava_athlete_id=athlete_id,
+        access_token="token",
+        refresh_token="refresh",
+    )
+    repo = InMemoryUserRepository([user])
+
+    # Act
+    result = repo.get_by_strava_athlete_id(athlete_id)
+
+    # Assert
+    assert result == user
+
+
+def test_get_by_strava_athlete_id_returns_none_when_not_found():
+    # Arrange
+    repo = InMemoryUserRepository()
+
+    # Act
+    result = repo.get_by_strava_athlete_id(99_999)
+
+    # Assert
+    assert result is None

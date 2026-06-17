@@ -9,10 +9,18 @@ def build_user(
     *,
     id: UUID | None = None,
     created_at: datetime | None = None,
+    strava_athlete_id: int | None = None,
+    access_token: str | None = None,
+    refresh_token: str | None = None,
+    token_expires_at: datetime | None = None,
 ) -> User:
     return User(
         id=id or uuid4(),
         created_at=created_at or datetime.now(UTC),
+        strava_athlete_id=strava_athlete_id,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_expires_at=token_expires_at,
     )
 
 

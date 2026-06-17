@@ -10,12 +10,15 @@ from convertreino.domain.repositories.user_repository import UserRepository
 def test_user_repository_contract():
     # Arrange
     get_by_id = UserRepository.get_by_id
+    get_by_strava_athlete_id = UserRepository.get_by_strava_athlete_id
     save = UserRepository.save
 
     # Assert
     assert inspect.isabstract(UserRepository)
     assert get_by_id.__annotations__["user_id"] is UUID
     assert get_by_id.__annotations__["return"] == User | None
+    assert get_by_strava_athlete_id.__annotations__["athlete_id"] is int
+    assert get_by_strava_athlete_id.__annotations__["return"] == User | None
     assert save.__annotations__["user"] is User
     assert save.__annotations__["return"] is User
 

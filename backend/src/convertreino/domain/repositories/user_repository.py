@@ -10,5 +10,9 @@ class UserRepository(ABC):
         ...
 
     @abstractmethod
+    def get_by_strava_athlete_id(self, athlete_id: int) -> User | None:
+        ...
+
+    @abstractmethod
     def save(self, user: User) -> User:
         ...

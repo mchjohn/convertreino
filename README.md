@@ -6,9 +6,9 @@ O ConverTreino é um assistente conversacional móvel que transforma dados de pe
 
 O produto opera como um Assistente Especialista Direcionado: toda lógica analítica é executada por serviços determinísticos; o LLM atua exclusivamente no entendimento de intenção, roteamento de ferramentas e formatação de respostas em linguagem natural. Isso garante precisão matemática, controle de custo operacional e segurança de execução.
 
-## Backend (SPEC-001)
+## Backend (SPEC-001 + SPEC-002)
 
-A fundação do backend está em [`backend/`](backend/) com spec aprovada em [`specs/SPEC-001-backend-foundation.md`](specs/SPEC-001-backend-foundation.md).
+A fundação do backend está em [`backend/`](backend/) com specs em [`specs/SPEC-001-backend-foundation.md`](specs/SPEC-001-backend-foundation.md) e OAuth Strava em [`specs/SPEC-002-strava-oauth.md`](specs/SPEC-002-strava-oauth.md).
 
 ```bash
 cd backend
