@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from convertreino.domain.entities.activity import Activity
 from convertreino.domain.entities.user import User
 from convertreino.infrastructure.strava.client import StravaActivitySummary
+from convertreino.infrastructure.strava.webhook import StravaWebhookEvent
 
 
 def build_user(
@@ -62,4 +63,25 @@ def build_strava_activity_summary(
         moving_time=moving_time,
         start_date=start_date,
         type=type,
+    )
+
+
+def build_strava_webhook_event(
+    *,
+    object_type: str = "activity",
+    aspect_type: str = "create",
+    object_id: int = 5001,
+    owner_id: int = 88_001,
+    event_time: int = 1_700_000_000,
+    subscription_id: int = 1,
+    updates: dict | None = None,
+) -> StravaWebhookEvent:
+    return StravaWebhookEvent(
+        object_type=object_type,
+        aspect_type=aspect_type,
+        object_id=object_id,
+        owner_id=owner_id,
+        event_time=event_time,
+        subscription_id=subscription_id,
+        updates=updates or {},
     )

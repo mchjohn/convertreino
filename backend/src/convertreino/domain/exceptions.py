@@ -14,5 +14,9 @@ class StravaApiError(Exception):
     """Raised when the Strava API is temporarily unavailable."""
 
 
+class StravaActivityNotFoundError(Exception):
+    """Raised when a Strava activity does not exist or is inaccessible."""
+
+
 class UserNotFoundError(Exception):
     """Raised when a requested user does not exist."""

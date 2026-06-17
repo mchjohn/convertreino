@@ -41,6 +41,8 @@ class StravaApiClient(Protocol):
         per_page: int = 200,
     ) -> list[StravaActivitySummary]: ...
 
+    def get_activity(self, access_token: str, activity_id: int) -> StravaActivitySummary: ...
+
 
 def expires_at_from_unix(timestamp: int) -> datetime:
     return datetime.fromtimestamp(timestamp, tz=UTC)

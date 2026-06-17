@@ -29,6 +29,7 @@ def test_activity_repository_contract():
     save = ActivityRepository.save
     get_by_external_id = ActivityRepository.get_by_external_id
     upsert = ActivityRepository.upsert
+    delete_by_external_id = ActivityRepository.delete_by_external_id
 
     # Assert
     assert inspect.isabstract(ActivityRepository)
@@ -41,3 +42,6 @@ def test_activity_repository_contract():
     assert get_by_external_id.__annotations__["return"] == Activity | None
     assert upsert.__annotations__["activity"] is Activity
     assert upsert.__annotations__["return"] is Activity
+    assert delete_by_external_id.__annotations__["user_id"] is UUID
+    assert delete_by_external_id.__annotations__["external_id"] is str
+    assert delete_by_external_id.__annotations__["return"] is bool

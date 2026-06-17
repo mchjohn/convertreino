@@ -5,9 +5,14 @@ from sqlalchemy.orm import Session
 
 from convertreino.application.strava_oauth_service import StravaOAuthService
 from convertreino.application.strava_sync_service import StravaSyncService
+from convertreino.application.strava_webhook_processor import StravaWebhookProcessor
 from convertreino.domain.repositories.activity_repository import ActivityRepository
 from convertreino.domain.repositories.user_repository import UserRepository
-from convertreino.infrastructure.config import get_strava_settings
+from convertreino.infrastructure.config import (
+    StravaWebhookSettings,
+    get_strava_settings,
+    get_strava_webhook_settings,
+)
 from convertreino.infrastructure.db.session import create_session_factory
 from convertreino.infrastructure.repositories.sqlalchemy_activity_repository import (
     SqlAlchemyActivityRepository,
@@ -20,6 +25,8 @@ from convertreino.infrastructure.strava.httpx_client import HttpxStravaApiClient
 
 _oauth_service_override: StravaOAuthService | None = None
 _sync_service_override: StravaSyncService | None = None
+_webhook_processor_override: StravaWebhookProcessor | None = None
+_webhook_settings_override: StravaWebhookSettings | None = None
 
 
 def set_oauth_service_override(service: StravaOAuthService | None) -> None:
@@ -30,6 +37,16 @@ def set_oauth_service_override(service: StravaOAuthService | None) -> None:
 def set_sync_service_override(service: StravaSyncService | None) -> None:
     global _sync_service_override
     _sync_service_override = service
+
+
+def set_webhook_processor_override(processor: StravaWebhookProcessor | None) -> None:
+    global _webhook_processor_override
+    _webhook_processor_override = processor
+
+
+def set_webhook_settings_override(settings: StravaWebhookSettings | None) -> None:
+    global _webhook_settings_override
+    _webhook_settings_override = settings
 
 
 def _build_oauth_service(session: Session) -> StravaOAuthService:
@@ -94,6 +111,37 @@ def get_strava_sync_service(
     return _build_sync_service(session)
 
 
+def _build_webhook_processor(session: Session) -> StravaWebhookProcessor:
+    oauth_service = _build_oauth_service(session)
+    user_repo = SqlAlchemyUserRepository(session)
+    activity_repo = SqlAlchemyActivityRepository(session)
+    settings = get_strava_settings()
+    strava_client = HttpxStravaApiClient(
+        client_id=settings.client_id,
+        client_secret=settings.client_secret,
+    )
+    return StravaWebhookProcessor(
+        user_repo=user_repo,
+        activity_repo=activity_repo,
+        strava_client=strava_client,
+        oauth_service=oauth_service,
+    )
+
+
+def get_strava_webhook_processor(
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> StravaWebhookProcessor:
+    if _webhook_processor_override is not None:
+        return _webhook_processor_override
+    return _build_webhook_processor(session)
+
+
+def get_strava_webhook_settings_dep() -> StravaWebhookSettings:
+    if _webhook_settings_override is not None:
+        return _webhook_settings_override
+    return get_strava_webhook_settings()
+
+
 def build_test_oauth_service(
     *,
     user_repo: UserRepository,
@@ -131,4 +179,27 @@ def build_test_sync_service(
         strava_client=client,
         oauth_service=oauth_service,
         page_commit=page_commit,
+    )
+
+
+def build_test_webhook_processor(
+    *,
+    user_repo: UserRepository,
+    activity_repo: ActivityRepository,
+    strava_client: FakeStravaApiClient | None = None,
+    client_id: str = "fake-client-id",
+    redirect_uri: str = "http://localhost:8000/auth/strava/callback",
+) -> StravaWebhookProcessor:
+    client = strava_client or FakeStravaApiClient()
+    oauth_service = StravaOAuthService(
+        user_repo=user_repo,
+        strava_client=client,
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+    )
+    return StravaWebhookProcessor(
+        user_repo=user_repo,
+        activity_repo=activity_repo,
+        strava_client=client,
+        oauth_service=oauth_service,
     )

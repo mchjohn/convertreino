@@ -1,7 +1,12 @@
-import httpx
 from typing import Any
 
-from convertreino.domain.exceptions import StravaApiError, StravaAuthError
+import httpx
+
+from convertreino.domain.exceptions import (
+    StravaActivityNotFoundError,
+    StravaApiError,
+    StravaAuthError,
+)
 from convertreino.infrastructure.strava.client import (
     StravaActivitySummary,
     StravaAthlete,
@@ -12,6 +17,7 @@ from convertreino.infrastructure.strava.client import (
 STRAVA_OAUTH_URL = "https://www.strava.com/oauth/token"
 STRAVA_ATHLETE_URL = "https://www.strava.com/api/v3/athlete"
 STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities"
+STRAVA_ACTIVITY_URL = "https://www.strava.com/api/v3/activities"
 
 
 class HttpxStravaApiClient:
@@ -82,6 +88,27 @@ class HttpxStravaApiClient:
             raise StravaAuthError(f"Strava activities request failed: {response.status_code}")
 
         return [_parse_activity_summary(item) for item in response.json()]
+
+    def get_activity(self, access_token: str, activity_id: int) -> StravaActivitySummary:
+        try:
+            response = httpx.get(
+                f"{STRAVA_ACTIVITY_URL}/{activity_id}",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=30.0,
+            )
+        except httpx.HTTPError as exc:
+            raise StravaApiError("Strava API request failed") from exc
+
+        if response.status_code in {401, 403}:
+            raise StravaAuthError("Reauthorize Strava account")
+        if response.status_code == 404:
+            raise StravaActivityNotFoundError(f"Strava activity not found: {activity_id}")
+        if response.status_code >= 500:
+            raise StravaApiError(f"Strava API unavailable: {response.status_code}")
+        if response.status_code >= 400:
+            raise StravaAuthError(f"Strava activity request failed: {response.status_code}")
+
+        return _parse_activity_summary(response.json())
 
     def _request_token(self, payload: dict[str, str]) -> StravaTokenResponse:
         try:

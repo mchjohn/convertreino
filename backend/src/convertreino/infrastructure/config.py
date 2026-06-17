@@ -10,6 +10,19 @@ class StravaSettings:
     redirect_uri: str
 
 
+@dataclass(frozen=True, slots=True)
+class StravaWebhookSettings:
+    verify_token: str
+    callback_url: str
+
+
+def get_strava_webhook_settings() -> StravaWebhookSettings:
+    return StravaWebhookSettings(
+        verify_token=os.environ.get("STRAVA_WEBHOOK_VERIFY_TOKEN", ""),
+        callback_url=os.environ.get("STRAVA_WEBHOOK_CALLBACK_URL", ""),
+    )
+
+
 def get_strava_settings() -> StravaSettings:
     client_id = os.environ.get("STRAVA_CLIENT_ID", "")
     client_secret = os.environ.get("STRAVA_CLIENT_SECRET", "")

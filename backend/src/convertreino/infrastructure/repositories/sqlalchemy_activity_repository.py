@@ -94,3 +94,15 @@ class SqlAlchemyActivityRepository(ActivityRepository):
             )
 
         return self.save(activity)
+
+    def delete_by_external_id(self, user_id: UUID, external_id: str) -> bool:
+        stmt = select(ActivityModel).where(
+            ActivityModel.user_id == user_id,
+            ActivityModel.external_id == external_id,
+        )
+        model = self._session.scalar(stmt)
+        if model is None:
+            return False
+        self._session.delete(model)
+        self._session.flush()
+        return True

@@ -20,3 +20,7 @@ class ActivityRepository(ABC):
     @abstractmethod
     def upsert(self, activity: Activity) -> Activity:
         ...
+
+    @abstractmethod
+    def delete_by_external_id(self, user_id: UUID, external_id: str) -> bool:
+        ...

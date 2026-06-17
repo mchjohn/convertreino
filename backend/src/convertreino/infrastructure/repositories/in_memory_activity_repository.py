@@ -53,3 +53,11 @@ class InMemoryActivityRepository(ActivityRepository):
 
         self._store.setdefault(activity.user_id, []).append(activity)
         return activity
+
+    def delete_by_external_id(self, user_id: UUID, external_id: str) -> bool:
+        activities = self._store.get(user_id, [])
+        for index, activity in enumerate(activities):
+            if activity.external_id == external_id:
+                del activities[index]
+                return True
+        return False

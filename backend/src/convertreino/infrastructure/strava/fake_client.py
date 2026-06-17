@@ -1,4 +1,8 @@
-from convertreino.domain.exceptions import StravaApiError, StravaAuthError
+from convertreino.domain.exceptions import (
+    StravaActivityNotFoundError,
+    StravaApiError,
+    StravaAuthError,
+)
 from convertreino.infrastructure.strava.client import (
     StravaActivitySummary,
     StravaAthlete,
@@ -20,6 +24,9 @@ class FakeStravaApiClient:
         activities: list[StravaActivitySummary] | None = None,
         fail_list_auth_pages: set[int] | None = None,
         fail_list_server_pages: set[int] | None = None,
+        fail_get_auth_ids: set[int] | None = None,
+        fail_get_not_found_ids: set[int] | None = None,
+        fail_get_server_ids: set[int] | None = None,
     ) -> None:
         self._athlete_id = athlete_id
         self._access_token = access_token
@@ -31,9 +38,13 @@ class FakeStravaApiClient:
         self._activities = list(activities or [])
         self._fail_list_auth_pages = fail_list_auth_pages or set()
         self._fail_list_server_pages = fail_list_server_pages or set()
+        self._fail_get_auth_ids = fail_get_auth_ids or set()
+        self._fail_get_not_found_ids = fail_get_not_found_ids or set()
+        self._fail_get_server_ids = fail_get_server_ids or set()
         self.exchange_calls: list[str] = []
         self.refresh_calls: list[str] = []
         self.list_activities_calls: list[tuple[int, int]] = []
+        self.get_activity_calls: list[tuple[str, int]] = []
 
     def exchange_code(self, code: str) -> StravaTokenResponse:
         self.exchange_calls.append(code)
@@ -75,6 +86,20 @@ class FakeStravaApiClient:
         start = (page - 1) * per_page
         end = start + per_page
         return self._activities[start:end]
+
+    def get_activity(self, access_token: str, activity_id: int) -> StravaActivitySummary:
+        self.get_activity_calls.append((access_token, activity_id))
+        if activity_id in self._fail_get_auth_ids:
+            raise StravaAuthError("Reauthorize Strava account")
+        if activity_id in self._fail_get_not_found_ids:
+            raise StravaActivityNotFoundError(f"Strava activity not found: {activity_id}")
+        if activity_id in self._fail_get_server_ids:
+            raise StravaApiError("Strava API unavailable: 503")
+
+        for summary in self._activities:
+            if summary.id == activity_id:
+                return summary
+        raise StravaActivityNotFoundError(f"Strava activity not found: {activity_id}")
 
     def _token_response(self) -> StravaTokenResponse:
         from convertreino.infrastructure.strava.client import expires_at_from_unix
