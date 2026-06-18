@@ -130,3 +130,124 @@ def test_get_longest_run_returns_none_for_unknown_user_id():
 
     # Assert
     assert result is None
+
+
+def test_get_longest_ride_returns_activity_with_max_distance():
+    # Arrange — CN-1
+    user_id = uuid4()
+    activities = [
+        build_activity(user_id=user_id, activity_type="Ride", distance_meters=30000),
+        build_activity(user_id=user_id, activity_type="Ride", distance_meters=120000),
+        build_activity(user_id=user_id, activity_type="Ride", distance_meters=80000),
+    ]
+    engine = PREngine(InMemoryActivityRepository(activities))
+
+    # Act
+    result = engine.get_longest_ride(user_id)
+
+    # Assert
+    assert result is not None
+    assert isinstance(result, Activity)
+    assert result.distance_meters == 120000
+
+
+def test_get_longest_ride_returns_single_ride():
+    # Arrange — CN-2
+    user_id = uuid4()
+    activities = [
+        build_activity(user_id=user_id, activity_type="Ride", distance_meters=65000),
+    ]
+    engine = PREngine(InMemoryActivityRepository(activities))
+
+    # Act
+    result = engine.get_longest_ride(user_id)
+
+    # Assert
+    assert result is not None
+    assert result.distance_meters == 65000
+
+
+def test_get_longest_ride_returns_none_when_no_rides():
+    # Arrange — CB-1
+    user_id = uuid4()
+    activities = [
+        build_activity(user_id=user_id, activity_type="Run", distance_meters=10000),
+        build_activity(user_id=user_id, activity_type="Swim", distance_meters=2000),
+    ]
+    engine = PREngine(InMemoryActivityRepository(activities))
+
+    # Act
+    result = engine.get_longest_ride(user_id)
+
+    # Assert
+    assert result is None
+
+
+def test_get_longest_ride_breaks_distance_tie_by_most_recent_start_date():
+    # Arrange — CB-2
+    user_id = uuid4()
+    older_ride = build_activity(
+        user_id=user_id,
+        activity_type="Ride",
+        distance_meters=80000,
+        start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+    )
+    newer_ride = build_activity(
+        user_id=user_id,
+        activity_type="Ride",
+        distance_meters=80000,
+        start_date=datetime(2024, 9, 15, 7, 30, 0, tzinfo=UTC),
+    )
+    engine = PREngine(InMemoryActivityRepository([older_ride, newer_ride]))
+
+    # Act
+    result = engine.get_longest_ride(user_id)
+
+    # Assert
+    assert result is not None
+    assert result.id == newer_ride.id
+    assert result.start_date == newer_ride.start_date
+
+
+def test_get_longest_ride_ignores_non_ride_activities_with_greater_distance():
+    # Arrange — CB-3
+    user_id = uuid4()
+    ride = build_activity(user_id=user_id, activity_type="Ride", distance_meters=50000)
+    run = build_activity(user_id=user_id, activity_type="Run", distance_meters=42195)
+    engine = PREngine(InMemoryActivityRepository([ride, run]))
+
+    # Act
+    result = engine.get_longest_ride(user_id)
+
+    # Assert
+    assert result is not None
+    assert result.id == ride.id
+    assert result.distance_meters == 50000
+
+
+def test_get_longest_ride_returns_none_when_user_has_no_activities():
+    # Arrange — CE-1
+    user_id = uuid4()
+    engine = PREngine(InMemoryActivityRepository())
+
+    # Act
+    result = engine.get_longest_ride(user_id)
+
+    # Assert
+    assert result is None
+
+
+def test_get_longest_ride_returns_none_for_unknown_user_id():
+    # Arrange — CE-2
+    other_user_id = uuid4()
+    activities = [
+        build_activity(user_id=other_user_id, activity_type="Ride", distance_meters=50000),
+    ]
+    engine = PREngine(InMemoryActivityRepository(activities))
+    unknown_user_id = uuid4()
+
+    # Act
+    result = engine.get_longest_ride(unknown_user_id)
+
+    # Assert
+    assert result is None

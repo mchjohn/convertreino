@@ -17,3 +17,13 @@ class PREngine:
         if not runs:
             return None
         return max(runs, key=lambda activity: (activity.distance_meters, activity.start_date))
+
+    def get_longest_ride(self, user_id: UUID) -> Activity | None:
+        rides = [
+            activity
+            for activity in self._activity_repo.get_all(user_id)
+            if activity.activity_type == "Ride"
+        ]
+        if not rides:
+            return None
+        return max(rides, key=lambda activity: (activity.distance_meters, activity.start_date))
