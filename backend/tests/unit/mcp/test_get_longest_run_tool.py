@@ -25,10 +25,20 @@ def _configure_engine(activities: list) -> None:
     set_activity_repo_factory(lambda: InMemoryActivityRepository(activities))
 
 
-async def _call_get_longest_run(user_id) -> LongestRunResult:
+async def _call_get_longest_run(
+    user_id,
+    *,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> LongestRunResult:
+    payload: dict[str, str] = {"user_id": str(user_id)}
+    if start_date is not None:
+        payload["start_date"] = start_date.isoformat()
+    if end_date is not None:
+        payload["end_date"] = end_date.isoformat()
     server = create_mcp_server()
     async with Client(server) as client:
-        result = await client.call_tool("get_longest_run", {"user_id": str(user_id)})
+        result = await client.call_tool("get_longest_run", payload)
     return LongestRunResult.model_validate(result.data)
 
 
@@ -197,3 +207,226 @@ def test_get_longest_run_handler_delegates_to_pr_engine():
     # Assert
     assert result.distance_km == 15.0
     assert result.activity_id == str(activity.id)
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_returns_max_distance_within_date_range():
+    # Arrange — CN-1
+    user_id = uuid4()
+    activities = [
+        build_activity(
+            user_id=user_id,
+            distance_meters=42000,
+            start_date=datetime(2023, 1, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+        build_activity(
+            user_id=user_id,
+            distance_meters=15000,
+            start_date=datetime(2024, 3, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+        build_activity(
+            user_id=user_id,
+            distance_meters=25000,
+            start_date=datetime(2024, 8, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+    ]
+    _configure_engine(activities)
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+        end_date=datetime(2024, 12, 31, 23, 59, 59, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result.distance_km == 25.0
+    assert result.activity_id is not None
+    assert result.date is not None
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_with_start_date_only_filters_lower_bound():
+    # Arrange — CN-3
+    user_id = uuid4()
+    activities = [
+        build_activity(
+            user_id=user_id,
+            distance_meters=30000,
+            start_date=datetime(2023, 6, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+        build_activity(
+            user_id=user_id,
+            distance_meters=10000,
+            start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+    ]
+    _configure_engine(activities)
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result.distance_km == 10.0
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_includes_activity_exactly_on_interval_boundary():
+    # Arrange — CB-1
+    user_id = uuid4()
+    activities = [
+        build_activity(
+            user_id=user_id,
+            distance_meters=10000,
+            start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+    ]
+    _configure_engine(activities)
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+        end_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result.distance_km == 10.0
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_returns_null_when_only_wrong_activity_type_in_range():
+    # Arrange — CB-2
+    user_id = uuid4()
+    activities = [
+        build_activity(
+            user_id=user_id,
+            activity_type="Ride",
+            distance_meters=50000,
+            start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+    ]
+    _configure_engine(activities)
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+        end_date=datetime(2024, 12, 31, 23, 59, 59, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result == LongestRunResult(
+        activity_id=None,
+        distance_km=None,
+        date=None,
+        duration_minutes=None,
+        average_pace_min_per_km=None,
+    )
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_breaks_distance_tie_within_date_range_by_most_recent_start_date():
+    # Arrange — CB-3
+    user_id = uuid4()
+    older_run = build_activity(
+        user_id=user_id,
+        distance_meters=10000,
+        start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+    )
+    newer_run = build_activity(
+        user_id=user_id,
+        distance_meters=10000,
+        start_date=datetime(2024, 9, 15, 7, 30, 0, tzinfo=UTC),
+    )
+    _configure_engine([older_run, newer_run])
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+        end_date=datetime(2024, 12, 31, 23, 59, 59, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result.activity_id == str(newer_run.id)
+    assert result.date == newer_run.start_date.isoformat()
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_returns_null_when_no_activities_in_range():
+    # Arrange — CE-1
+    user_id = uuid4()
+    activities = [
+        build_activity(
+            user_id=user_id,
+            distance_meters=10000,
+            start_date=datetime(2023, 6, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+    ]
+    _configure_engine(activities)
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+        end_date=datetime(2024, 12, 31, 23, 59, 59, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result == LongestRunResult(
+        activity_id=None,
+        distance_km=None,
+        date=None,
+        duration_minutes=None,
+        average_pace_min_per_km=None,
+    )
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_returns_null_for_invalid_date_range():
+    # Arrange — CE-2
+    user_id = uuid4()
+    activities = [
+        build_activity(
+            user_id=user_id,
+            distance_meters=10000,
+            start_date=datetime(2024, 6, 1, 8, 0, 0, tzinfo=UTC),
+        ),
+    ]
+    _configure_engine(activities)
+
+    # Act
+    result = await _call_get_longest_run(
+        user_id,
+        start_date=datetime(2024, 12, 31, 0, 0, 0, tzinfo=UTC),
+        end_date=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+    )
+
+    # Assert
+    assert result == LongestRunResult(
+        activity_id=None,
+        distance_km=None,
+        date=None,
+        duration_minutes=None,
+        average_pace_min_per_km=None,
+    )
+
+
+@pytest.mark.anyio
+async def test_get_longest_run_rejects_malformed_start_date():
+    # Arrange — CE-3
+    user_id = uuid4()
+    _configure_engine([])
+    server = create_mcp_server()
+
+    # Act / Assert
+    async with Client(server) as client:
+        with pytest.raises(ToolError):
+            await client.call_tool(
+                "get_longest_run",
+                {"user_id": str(user_id), "start_date": "not-a-date"},
+            )

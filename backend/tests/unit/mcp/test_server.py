@@ -34,6 +34,8 @@ async def test_get_longest_run_tool_is_registered_with_boundary_description():
     assert tool.description is not None
     assert "corrida" in tool.description.lower()
     assert "get_longest_ride" in tool.description
+    assert "start_date" in tool.description
+    assert "intervalo de datas" in tool.description.lower()
     assert tool.description == GET_LONGEST_RUN_DESCRIPTION
 
 
@@ -51,6 +53,8 @@ async def test_get_longest_ride_tool_is_registered_with_boundary_description():
     assert tool.description is not None
     assert "pedal" in tool.description.lower()
     assert "get_longest_run" in tool.description
+    assert "start_date" in tool.description
+    assert "intervalo de datas" in tool.description.lower()
     assert tool.description == GET_LONGEST_RIDE_DESCRIPTION
 
 

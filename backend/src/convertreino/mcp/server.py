@@ -1,5 +1,6 @@
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -49,15 +50,35 @@ def create_mcp_server() -> FastMCP:
     mcp = FastMCP("ConverTreino")
 
     @mcp.tool(name="get_longest_run", description=GET_LONGEST_RUN_DESCRIPTION)
-    def get_longest_run_tool(user_id: UUID) -> dict[str, Any]:
+    def get_longest_run_tool(
+        user_id: UUID,
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, Any]:
         with _activity_repo_scope() as activity_repo:
-            result = get_longest_run(user_id, PREngine(activity_repo))
+            result = get_longest_run(
+                user_id,
+                PREngine(activity_repo),
+                start_date=start_date,
+                end_date=end_date,
+            )
         return result.model_dump()
 
     @mcp.tool(name="get_longest_ride", description=GET_LONGEST_RIDE_DESCRIPTION)
-    def get_longest_ride_tool(user_id: UUID) -> dict[str, Any]:
+    def get_longest_ride_tool(
+        user_id: UUID,
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, Any]:
         with _activity_repo_scope() as activity_repo:
-            result = get_longest_ride(user_id, PREngine(activity_repo))
+            result = get_longest_ride(
+                user_id,
+                PREngine(activity_repo),
+                start_date=start_date,
+                end_date=end_date,
+            )
         return result.model_dump()
 
     return mcp
