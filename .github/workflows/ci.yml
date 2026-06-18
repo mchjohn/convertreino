@@ -55,7 +55,10 @@ jobs:
         run: uv run mypy src
 
       - name: Pytest
-        run: uv run pytest --cov=convertreino.domain --cov-report=term-missing --cov-fail-under=95
+        run: |
+          uv run pytest --cov=convertreino.domain --cov=convertreino.mcp --cov-report=term-missing
+          uv run coverage report --include='*/convertreino/domain/*' --fail-under=95
+          uv run coverage report --include='*/convertreino/mcp/*' --fail-under=90
 
       - name: Alembic upgrade
         env:
