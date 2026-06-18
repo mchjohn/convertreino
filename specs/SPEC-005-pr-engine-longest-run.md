@@ -130,13 +130,13 @@ Nenhum. Operação somente leitura via `ActivityRepository.get_all`.
 
 ## Critérios de Aceite
 
-- [ ] Spec com status **Aprovada** no repositório
-- [ ] `PREngine` em `domain/services/` sem dependência de infra (apenas `ActivityRepository`)
-- [ ] Um teste unitário por CN/CB/CE (7 testes de comportamento)
-- [ ] Cobertura Domain >= 95% para `pr_engine.py`
-- [ ] Nenhuma migration necessária
-- [ ] CI verde (ruff, mypy, pytest)
-- [ ] Comportamento determinístico em empates (`start_date` mais recente vence)
+- [x] Spec com status **Aprovada** no repositório
+- [x] `PREngine` em `domain/services/` sem dependência de infra (apenas `ActivityRepository`)
+- [x] Um teste unitário por CN/CB/CE (7 testes de comportamento)
+- [x] Cobertura Domain >= 95% para `pr_engine.py`
+- [x] Nenhuma migration necessária
+- [x] CI verde (ruff, mypy, pytest)
+- [x] Comportamento determinístico em empates (`start_date` mais recente vence)
 
 ---
 
@@ -221,23 +221,23 @@ def test_get_longest_run_returns_activity_with_max_distance():
 ## Checklist de revisão (seção 12 do guia)
 
 ### Clareza
-- [ ] O contexto explica o problema sem descrever a solução?
-- [ ] O contrato tem tipos explícitos para todos os inputs e outputs?
-- [ ] Cada comportamento tem "Dado / Quando / Então" completo?
-- [ ] Os critérios de aceite são binários e verificáveis?
+- [x] O contexto explica o problema sem descrever a solução?
+- [x] O contrato tem tipos explícitos para todos os inputs e outputs?
+- [x] Cada comportamento tem "Dado / Quando / Então" completo?
+- [x] Os critérios de aceite são binários e verificáveis?
 
 ### Completude
-- [ ] Há ao menos um caso normal (CN-1, CN-2)?
-- [ ] Casos de borda cobertos (sem Run, empate, mix de tipos)?
-- [ ] Casos de erro especificados com comportamento esperado (`None`, sem exceção)?
-- [ ] Escopo "Excluído" deixa claro o que ficou de fora?
+- [x] Há ao menos um caso normal (CN-1, CN-2)?
+- [x] Casos de borda cobertos (sem Run, empate, mix de tipos)?
+- [x] Casos de erro especificados com comportamento esperado (`None`, sem exceção)?
+- [x] Escopo "Excluído" deixa claro o que ficou de fora?
 
 ### Consistência
-- [ ] Não contradiz SPEC-001 (`get_all` → `[]`) nem SPEC-003 (`activity_type` literal Strava)?
-- [ ] Nomes de tipos alinhados ao código existente (`Activity`, `ActivityRepository`)?
-- [ ] Domain não acessa banco diretamente; application layer não entra nesta spec?
+- [x] Não contradiz SPEC-001 (`get_all` → `[]`) nem SPEC-003 (`activity_type` literal Strava)?
+- [x] Nomes de tipos alinhados ao código existente (`Activity`, `ActivityRepository`)?
+- [x] Domain não acessa banco diretamente; application layer não entra nesta spec?
 
 ### Testabilidade
-- [ ] Cada comportamento mapeia para teste unitário com `InMemoryActivityRepository`?
-- [ ] Comportamentos determinísticos (mesmo input → mesmo output)?
-- [ ] Efeitos colaterais explicitados (nenhum) e testáveis?
+- [x] Cada comportamento mapeia para teste unitário com `InMemoryActivityRepository`?
+- [x] Comportamentos determinísticos (mesmo input → mesmo output)?
+- [x] Efeitos colaterais explicitados (nenhum) e testáveis?
