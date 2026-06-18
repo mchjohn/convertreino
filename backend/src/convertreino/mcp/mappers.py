@@ -1,5 +1,5 @@
 from convertreino.domain.entities.activity import Activity
-from convertreino.mcp.schemas import LongestRunResult
+from convertreino.mcp.schemas import LongestRideResult, LongestRunResult
 
 
 def activity_to_longest_run_result(activity: Activity | None) -> LongestRunResult:
@@ -24,4 +24,29 @@ def activity_to_longest_run_result(activity: Activity | None) -> LongestRunResul
         date=activity.start_date.isoformat(),
         duration_minutes=duration_minutes,
         average_pace_min_per_km=average_pace_min_per_km,
+    )
+
+
+def activity_to_longest_ride_result(activity: Activity | None) -> LongestRideResult:
+    if activity is None:
+        return LongestRideResult(
+            activity_id=None,
+            distance_km=None,
+            date=None,
+            duration_minutes=None,
+            average_speed_kmh=None,
+        )
+
+    distance_km = round(activity.distance_meters / 1000, 3)
+    duration_minutes = round(activity.elapsed_time_seconds / 60, 1)
+    average_speed_kmh = None
+    if distance_km > 0:
+        average_speed_kmh = round(distance_km / (duration_minutes / 60), 2)
+
+    return LongestRideResult(
+        activity_id=str(activity.id),
+        distance_km=distance_km,
+        date=activity.start_date.isoformat(),
+        duration_minutes=duration_minutes,
+        average_speed_kmh=average_speed_kmh,
     )

@@ -10,7 +10,7 @@ from convertreino.mcp.server import (
     create_mcp_server,
     set_activity_repo_factory,
 )
-from convertreino.mcp.tools.pr import GET_LONGEST_RUN_DESCRIPTION
+from convertreino.mcp.tools.pr import GET_LONGEST_RIDE_DESCRIPTION, GET_LONGEST_RUN_DESCRIPTION
 
 
 @pytest.fixture(autouse=True)
@@ -35,6 +35,23 @@ async def test_get_longest_run_tool_is_registered_with_boundary_description():
     assert "corrida" in tool.description.lower()
     assert "get_longest_ride" in tool.description
     assert tool.description == GET_LONGEST_RUN_DESCRIPTION
+
+
+@pytest.mark.anyio
+async def test_get_longest_ride_tool_is_registered_with_boundary_description():
+    # Arrange
+    server = create_mcp_server()
+
+    # Act
+    async with Client(server) as client:
+        tools = await client.list_tools()
+
+    # Assert
+    tool = next(tool for tool in tools if tool.name == "get_longest_ride")
+    assert tool.description is not None
+    assert "pedal" in tool.description.lower()
+    assert "get_longest_run" in tool.description
+    assert tool.description == GET_LONGEST_RIDE_DESCRIPTION
 
 
 def test_create_mcp_app_returns_http_application():

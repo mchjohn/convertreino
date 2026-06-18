@@ -12,7 +12,12 @@ from convertreino.infrastructure.db.session import create_session_factory
 from convertreino.infrastructure.repositories.sqlalchemy_activity_repository import (
     SqlAlchemyActivityRepository,
 )
-from convertreino.mcp.tools.pr import GET_LONGEST_RUN_DESCRIPTION, get_longest_run
+from convertreino.mcp.tools.pr import (
+    GET_LONGEST_RIDE_DESCRIPTION,
+    GET_LONGEST_RUN_DESCRIPTION,
+    get_longest_ride,
+    get_longest_run,
+)
 
 _activity_repo_factory: Callable[[], ActivityRepository] | None = None
 
@@ -47,6 +52,12 @@ def create_mcp_server() -> FastMCP:
     def get_longest_run_tool(user_id: UUID) -> dict[str, Any]:
         with _activity_repo_scope() as activity_repo:
             result = get_longest_run(user_id, PREngine(activity_repo))
+        return result.model_dump()
+
+    @mcp.tool(name="get_longest_ride", description=GET_LONGEST_RIDE_DESCRIPTION)
+    def get_longest_ride_tool(user_id: UUID) -> dict[str, Any]:
+        with _activity_repo_scope() as activity_repo:
+            result = get_longest_ride(user_id, PREngine(activity_repo))
         return result.model_dump()
 
     return mcp
