@@ -1,8 +1,19 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from convertreino.mcp.mappers import activity_to_longest_ride_result, activity_to_longest_run_result
-from convertreino.mcp.schemas import LongestRideResult, LongestRunResult
+from convertreino.domain.services.volume_engine import VolumeResult
+from convertreino.mcp.mappers import (
+    activity_to_longest_ride_result,
+    activity_to_longest_run_result,
+    volume_result_to_ride_volume_result,
+    volume_result_to_run_volume_result,
+)
+from convertreino.mcp.schemas import (
+    LongestRideResult,
+    LongestRunResult,
+    RideVolumeResult,
+    RunVolumeResult,
+)
 from tests.builders import build_activity
 
 
@@ -121,3 +132,59 @@ def test_activity_to_longest_ride_result_returns_null_speed_when_distance_is_zer
     # Assert
     assert result.distance_km == 0.0
     assert result.average_speed_kmh is None
+
+
+def test_volume_result_to_run_volume_result_converts_meters_to_km():
+    # Arrange
+    result = VolumeResult(total_distance_meters=15000, activities_count=2)
+
+    # Act
+    mapped = volume_result_to_run_volume_result(result)
+
+    # Assert
+    assert mapped == RunVolumeResult(total_distance_km=15.0, activities_count=2)
+
+
+def test_volume_result_to_run_volume_result_rounds_to_three_decimal_places():
+    # Arrange
+    result = VolumeResult(total_distance_meters=36097, activities_count=3)
+
+    # Act
+    mapped = volume_result_to_run_volume_result(result)
+
+    # Assert
+    assert mapped.total_distance_km == 36.097
+    assert mapped.activities_count == 3
+
+
+def test_volume_result_to_run_volume_result_returns_zero_for_empty_result():
+    # Arrange
+    result = VolumeResult(total_distance_meters=0, activities_count=0)
+
+    # Act
+    mapped = volume_result_to_run_volume_result(result)
+
+    # Assert
+    assert mapped == RunVolumeResult(total_distance_km=0.0, activities_count=0)
+
+
+def test_volume_result_to_ride_volume_result_converts_meters_to_km():
+    # Arrange
+    result = VolumeResult(total_distance_meters=80000, activities_count=1)
+
+    # Act
+    mapped = volume_result_to_ride_volume_result(result)
+
+    # Assert
+    assert mapped == RideVolumeResult(total_distance_km=80.0, activities_count=1)
+
+
+def test_volume_result_to_ride_volume_result_returns_zero_for_empty_result():
+    # Arrange
+    result = VolumeResult(total_distance_meters=0, activities_count=0)
+
+    # Act
+    mapped = volume_result_to_ride_volume_result(result)
+
+    # Assert
+    assert mapped == RideVolumeResult(total_distance_km=0.0, activities_count=0)

@@ -15,3 +15,13 @@ class LongestRideResult(BaseModel):
     date: str | None
     duration_minutes: float | None
     average_speed_kmh: float | None
+
+
+class RunVolumeResult(BaseModel):
+    total_distance_km: float
+    activities_count: int
+
+
+class RideVolumeResult(BaseModel):
+    total_distance_km: float
+    activities_count: int

@@ -11,6 +11,7 @@ from convertreino.mcp.server import (
     set_activity_repo_factory,
 )
 from convertreino.mcp.tools.pr import GET_LONGEST_RIDE_DESCRIPTION, GET_LONGEST_RUN_DESCRIPTION
+from convertreino.mcp.tools.volume import GET_RIDE_VOLUME_DESCRIPTION, GET_RUN_VOLUME_DESCRIPTION
 
 
 @pytest.fixture(autouse=True)
@@ -34,6 +35,7 @@ async def test_get_longest_run_tool_is_registered_with_boundary_description():
     assert tool.description is not None
     assert "corrida" in tool.description.lower()
     assert "get_longest_ride" in tool.description
+    assert "get_run_volume" in tool.description
     assert "start_date" in tool.description
     assert "intervalo de datas" in tool.description.lower()
     assert tool.description == GET_LONGEST_RUN_DESCRIPTION
@@ -53,9 +55,50 @@ async def test_get_longest_ride_tool_is_registered_with_boundary_description():
     assert tool.description is not None
     assert "pedal" in tool.description.lower()
     assert "get_longest_run" in tool.description
+    assert "get_ride_volume" in tool.description
     assert "start_date" in tool.description
     assert "intervalo de datas" in tool.description.lower()
     assert tool.description == GET_LONGEST_RIDE_DESCRIPTION
+
+
+@pytest.mark.anyio
+async def test_get_run_volume_tool_is_registered_with_boundary_description():
+    # Arrange
+    server = create_mcp_server()
+
+    # Act
+    async with Client(server) as client:
+        tools = await client.list_tools()
+
+    # Assert
+    tool = next(tool for tool in tools if tool.name == "get_run_volume")
+    assert tool.description is not None
+    assert "corrida" in tool.description.lower()
+    assert "get_ride_volume" in tool.description
+    assert "get_longest_run" in tool.description
+    assert "start_date" in tool.description
+    assert "intervalo de datas" in tool.description.lower()
+    assert tool.description == GET_RUN_VOLUME_DESCRIPTION
+
+
+@pytest.mark.anyio
+async def test_get_ride_volume_tool_is_registered_with_boundary_description():
+    # Arrange
+    server = create_mcp_server()
+
+    # Act
+    async with Client(server) as client:
+        tools = await client.list_tools()
+
+    # Assert
+    tool = next(tool for tool in tools if tool.name == "get_ride_volume")
+    assert tool.description is not None
+    assert "pedal" in tool.description.lower()
+    assert "get_run_volume" in tool.description
+    assert "get_longest_ride" in tool.description
+    assert "start_date" in tool.description
+    assert "intervalo de datas" in tool.description.lower()
+    assert tool.description == GET_RIDE_VOLUME_DESCRIPTION
 
 
 def test_create_mcp_app_returns_http_application():

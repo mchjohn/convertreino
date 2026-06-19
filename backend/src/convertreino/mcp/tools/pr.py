@@ -24,8 +24,8 @@ GET_LONGEST_RUN_DESCRIPTION = (
     "'Qual foi minha corrida mais longa em 2024?', 'Qual meu recorde de corrida neste mês?', "
     "'Qual a maior distância que corri entre março e junho?'. "
     "Perguntas que NÃO devem acionar: 'Qual foi meu pedal mais longo?' → get_longest_ride; "
-    "'Quanto corri essa semana?' → volume engine; "
-    "'Quanto corri em 2024?' (soma total) → volume engine; "
+    "'Quanto corri essa semana?' → get_run_volume; "
+    "'Quanto corri em 2024?' (soma total) → get_run_volume; "
     "'Qual meu pace médio?' → engine de pace."
 )
 
@@ -61,8 +61,8 @@ GET_LONGEST_RIDE_DESCRIPTION = (
     "'Qual meu recorde de pedal em km?', 'Qual a maior distância que já pedalei?', "
     "'Qual foi meu pedal mais longo em 2024?', 'Qual meu recorde de ciclismo neste mês?'. "
     "Perguntas que NÃO devem acionar: 'Qual foi minha corrida mais longa?' → get_longest_run; "
-    "'Quanto pedalei essa semana?' → volume engine; "
-    "'Quanto pedalei em 2024?' (soma total) → volume engine; "
+    "'Quanto pedalei essa semana?' → get_ride_volume; "
+    "'Quanto pedalei em 2024?' (soma total) → get_ride_volume; "
     "'Qual minha velocidade média geral?' → engine de velocidade."
 )
 

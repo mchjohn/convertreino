@@ -1,5 +1,11 @@
 from convertreino.domain.entities.activity import Activity
-from convertreino.mcp.schemas import LongestRideResult, LongestRunResult
+from convertreino.domain.services.volume_engine import VolumeResult
+from convertreino.mcp.schemas import (
+    LongestRideResult,
+    LongestRunResult,
+    RideVolumeResult,
+    RunVolumeResult,
+)
 
 
 def activity_to_longest_run_result(activity: Activity | None) -> LongestRunResult:
@@ -49,4 +55,18 @@ def activity_to_longest_ride_result(activity: Activity | None) -> LongestRideRes
         date=activity.start_date.isoformat(),
         duration_minutes=duration_minutes,
         average_speed_kmh=average_speed_kmh,
+    )
+
+
+def volume_result_to_run_volume_result(result: VolumeResult) -> RunVolumeResult:
+    return RunVolumeResult(
+        total_distance_km=round(result.total_distance_meters / 1000, 3),
+        activities_count=result.activities_count,
+    )
+
+
+def volume_result_to_ride_volume_result(result: VolumeResult) -> RideVolumeResult:
+    return RideVolumeResult(
+        total_distance_km=round(result.total_distance_meters / 1000, 3),
+        activities_count=result.activities_count,
     )

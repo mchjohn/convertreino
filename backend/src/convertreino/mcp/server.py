@@ -9,6 +9,7 @@ from fastmcp.server.http import StarletteWithLifespan
 
 from convertreino.domain.repositories.activity_repository import ActivityRepository
 from convertreino.domain.services.pr_engine import PREngine
+from convertreino.domain.services.volume_engine import VolumeEngine
 from convertreino.infrastructure.db.session import create_session_factory
 from convertreino.infrastructure.repositories.sqlalchemy_activity_repository import (
     SqlAlchemyActivityRepository,
@@ -18,6 +19,12 @@ from convertreino.mcp.tools.pr import (
     GET_LONGEST_RUN_DESCRIPTION,
     get_longest_ride,
     get_longest_run,
+)
+from convertreino.mcp.tools.volume import (
+    GET_RIDE_VOLUME_DESCRIPTION,
+    GET_RUN_VOLUME_DESCRIPTION,
+    get_ride_volume,
+    get_run_volume,
 )
 
 _activity_repo_factory: Callable[[], ActivityRepository] | None = None
@@ -76,6 +83,38 @@ def create_mcp_server() -> FastMCP:
             result = get_longest_ride(
                 user_id,
                 PREngine(activity_repo),
+                start_date=start_date,
+                end_date=end_date,
+            )
+        return result.model_dump()
+
+    @mcp.tool(name="get_run_volume", description=GET_RUN_VOLUME_DESCRIPTION)
+    def get_run_volume_tool(
+        user_id: UUID,
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, Any]:
+        with _activity_repo_scope() as activity_repo:
+            result = get_run_volume(
+                user_id,
+                VolumeEngine(activity_repo),
+                start_date=start_date,
+                end_date=end_date,
+            )
+        return result.model_dump()
+
+    @mcp.tool(name="get_ride_volume", description=GET_RIDE_VOLUME_DESCRIPTION)
+    def get_ride_volume_tool(
+        user_id: UUID,
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, Any]:
+        with _activity_repo_scope() as activity_repo:
+            result = get_ride_volume(
+                user_id,
+                VolumeEngine(activity_repo),
                 start_date=start_date,
                 end_date=end_date,
             )
