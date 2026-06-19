@@ -26,6 +26,32 @@ cp .env.example .env
 
 No emulador Android, use `http://10.0.2.2:8000` como `EXPO_PUBLIC_API_BASE_URL` para alcançar o host.
 
+### Dispositivo físico com ngrok
+
+Em um celular real, `localhost` aponta para o próprio aparelho — a API no seu computador não é acessível. Use [ngrok](https://ngrok.com/download) para expor o backend local:
+
+1. Inicie o backend na porta 8000 (veja [`backend/README.md`](../backend/README.md)).
+2. Em outro terminal, crie o túnel:
+
+```bash
+ngrok http 8000
+```
+
+3. Copie a URL HTTPS exibida (ex.: `https://abcd-1234.ngrok-free.app`).
+4. Atualize `mobile/.env`:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://abcd-1234.ngrok-free.app
+```
+
+5. Reinicie o Expo com cache limpo para recarregar as variáveis:
+
+```bash
+npx expo start -c
+```
+
+No plano gratuito, a URL do ngrok muda a cada execução — atualize o `.env` e reinicie o Expo sempre que reiniciar o túnel.
+
 ### Strava — Authorization Callback
 
 1. Acesse [developers.strava.com](https://developers.strava.com) → **My API Application**.

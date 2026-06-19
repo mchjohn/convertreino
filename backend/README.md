@@ -130,3 +130,25 @@ uv run uvicorn convertreino.api.main:app --reload --app-dir src
 curl http://localhost:8000/health
 curl http://localhost:8000/auth/strava/authorize
 ```
+
+## Expor API local (ngrok)
+
+Para testar o app mobile em dispositivo físico ou receber webhooks do Strava, exponha a API com [ngrok](https://ngrok.com/download):
+
+```bash
+# Terminal 1 — API
+uv run uvicorn convertreino.api.main:app --reload --app-dir src
+
+# Terminal 2 — túnel público
+ngrok http 8000
+```
+
+Use a URL HTTPS gerada (ex.: `https://abcd-1234.ngrok-free.app`):
+
+| Caso de uso | Configuração |
+|-------------|--------------|
+| App mobile em celular real | `EXPO_PUBLIC_API_BASE_URL=https://abcd-1234.ngrok-free.app` em `mobile/.env` (reinicie o Expo com `npx expo start -c`) |
+| OAuth web via ngrok | `STRAVA_REDIRECT_URI=https://abcd-1234.ngrok-free.app/auth/strava/callback` e registre o domínio no painel Strava |
+| Webhooks Strava | `STRAVA_WEBHOOK_CALLBACK_URL=https://abcd-1234.ngrok-free.app/webhooks/strava` |
+
+No plano gratuito, a URL muda a cada execução do ngrok — atualize as variáveis quando reiniciar o túnel.

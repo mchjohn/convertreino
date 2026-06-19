@@ -8,3 +8,5 @@ mobile/node_modules
 mobile/coverage
 mobile/.env
 mobile/.expo
+mobile/ios
+mobile/android
