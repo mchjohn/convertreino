@@ -1,0 +1,94 @@
+import json
+from dataclasses import dataclass
+from uuid import UUID
+
+from convertreino.application.chat_tools import ChatToolRegistry
+from convertreino.application.llm.client import LLMClient
+from convertreino.application.llm.types import ChatMessage
+from convertreino.domain.exceptions import ChatProcessingError
+
+DEFAULT_SYSTEM_PROMPT = (
+    "Você é o ConverTreino, assistente de performance esportiva para atletas com dados do Strava. "
+    "Responda sempre em português do Brasil. "
+    "Use as ferramentas disponíveis para obter dados analíticos; nunca invente números. "
+    "Se a ferramenta retornar dados vazios ou nulos, informe claramente que não há dados. "
+    "Diferencie recorde individual (get_longest_run / get_longest_ride) de volume agregado "
+    "(get_run_volume / get_ride_volume). "
+    "Diferencie corrida (Run) de pedal (Ride). "
+    "Converta períodos mencionados pelo usuário em start_date/end_date "
+    "ISO 8601 UTC ao chamar tools."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ChatResponse:
+    message: ChatMessage
+    tool_calls_made: tuple[str, ...]
+
+
+class ChatOrchestrator:
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        tool_registry: ChatToolRegistry,
+        *,
+        max_tool_iterations: int = 5,
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
+    ) -> None:
+        self._llm_client = llm_client
+        self._tool_registry = tool_registry
+        self._max_tool_iterations = max_tool_iterations
+        self._system_prompt = system_prompt
+
+    def handle(self, user_id: UUID, messages: list[ChatMessage]) -> ChatResponse:
+        conversation: list[ChatMessage] = [
+            ChatMessage(role="system", content=self._system_prompt),
+            *messages,
+        ]
+        tool_calls_made: list[str] = []
+        iterations = 0
+        tools = self._tool_registry.get_tool_definitions()
+
+        while True:
+            completion = self._llm_client.complete(conversation, tools)
+
+            if completion.tool_calls:
+                iterations += 1
+                if iterations > self._max_tool_iterations:
+                    raise ChatProcessingError("Exceeded max tool iterations")
+
+                assistant_content = completion.message.content if completion.message else ""
+                conversation.append(
+                    ChatMessage(
+                        role="assistant",
+                        content=assistant_content,
+                        tool_calls=completion.tool_calls,
+                    )
+                )
+
+                for tool_call in completion.tool_calls:
+                    tool_calls_made.append(tool_call.name)
+                    try:
+                        result = self._tool_registry.execute(
+                            user_id,
+                            tool_call.name,
+                            tool_call.arguments,
+                        )
+                    except ValueError as exc:
+                        raise ChatProcessingError(str(exc)) from exc
+                    conversation.append(
+                        ChatMessage(
+                            role="tool",
+                            content=json.dumps(result),
+                            tool_call_id=tool_call.id,
+                        )
+                    )
+                continue
+
+            if completion.message is not None and completion.message.role == "assistant":
+                return ChatResponse(
+                    message=completion.message,
+                    tool_calls_made=tuple(tool_calls_made),
+                )
+
+            raise ChatProcessingError("LLM did not return a final assistant message")

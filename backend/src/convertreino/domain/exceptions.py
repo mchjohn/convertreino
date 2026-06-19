@@ -24,3 +24,11 @@ class UserNotFoundError(Exception):
 
 class InvalidTokenError(Exception):
     """Raised when a JWT is malformed, invalid, expired, or missing required claims."""
+
+
+class LLMProviderError(Exception):
+    """Raised when the LLM provider is unavailable or returns an error."""
+
+
+class ChatProcessingError(Exception):
+    """Raised when chat orchestration fails after tool-use or validation errors."""

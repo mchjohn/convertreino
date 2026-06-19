@@ -5,7 +5,10 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from convertreino.application.chat_orchestrator import ChatOrchestrator
+from convertreino.application.chat_tools import ChatToolRegistry
 from convertreino.application.jwt_token_service import JwtTokenService
+from convertreino.application.llm.openai_client import OpenAILLMClient
 from convertreino.application.strava_oauth_service import StravaOAuthService
 from convertreino.application.strava_sync_service import StravaSyncService
 from convertreino.application.strava_webhook_processor import StravaWebhookProcessor
@@ -14,6 +17,7 @@ from convertreino.domain.repositories.activity_repository import ActivityReposit
 from convertreino.domain.repositories.user_repository import UserRepository
 from convertreino.infrastructure.config import (
     StravaWebhookSettings,
+    get_chat_settings,
     get_jwt_settings,
     get_strava_settings,
     get_strava_webhook_settings,
@@ -33,6 +37,7 @@ _sync_service_override: StravaSyncService | None = None
 _webhook_processor_override: StravaWebhookProcessor | None = None
 _webhook_settings_override: StravaWebhookSettings | None = None
 _jwt_service_override: JwtTokenService | None = None
+_chat_orchestrator_override: ChatOrchestrator | None = None
 
 security = HTTPBearer(auto_error=False)
 
@@ -60,6 +65,11 @@ def set_webhook_settings_override(settings: StravaWebhookSettings | None) -> Non
 def set_jwt_service_override(service: JwtTokenService | None) -> None:
     global _jwt_service_override
     _jwt_service_override = service
+
+
+def set_chat_orchestrator_override(orchestrator: ChatOrchestrator | None) -> None:
+    global _chat_orchestrator_override
+    _chat_orchestrator_override = orchestrator
 
 
 def get_jwt_token_service() -> JwtTokenService:
@@ -165,6 +175,29 @@ def get_strava_webhook_processor(
     if _webhook_processor_override is not None:
         return _webhook_processor_override
     return _build_webhook_processor(session)
+
+
+def _build_chat_orchestrator(session: Session) -> ChatOrchestrator:
+    settings = get_chat_settings()
+    activity_repo = SqlAlchemyActivityRepository(session)
+    tool_registry = ChatToolRegistry(activity_repo)
+    llm_client = OpenAILLMClient(
+        api_key=settings.openai_api_key,
+        model=settings.openai_model,
+    )
+    return ChatOrchestrator(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+        max_tool_iterations=settings.max_tool_iterations,
+    )
+
+
+def get_chat_orchestrator(
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> ChatOrchestrator:
+    if _chat_orchestrator_override is not None:
+        return _chat_orchestrator_override
+    return _build_chat_orchestrator(session)
 
 
 def get_strava_webhook_settings_dep() -> StravaWebhookSettings:

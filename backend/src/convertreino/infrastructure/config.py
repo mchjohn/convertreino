@@ -53,6 +53,26 @@ def get_jwt_settings() -> JwtSettings:
     return JwtSettings(secret=secret, expires_minutes=int(expires_raw))
 
 
+@dataclass(frozen=True, slots=True)
+class ChatSettings:
+    openai_api_key: str
+    openai_model: str
+    max_tool_iterations: int
+
+
+def get_chat_settings() -> ChatSettings:
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key and _is_test_runtime():
+        api_key = "test-openai-key"
+    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    max_iterations_raw = os.environ.get("CHAT_MAX_TOOL_ITERATIONS", "5")
+    return ChatSettings(
+        openai_api_key=api_key,
+        openai_model=model,
+        max_tool_iterations=int(max_iterations_raw),
+    )
+
+
 def build_authorization_url(
     *,
     client_id: str,

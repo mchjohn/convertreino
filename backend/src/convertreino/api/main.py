@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from convertreino.api.routes.chat import router as chat_router
 from convertreino.api.routes.health import router as health_router
 from convertreino.api.routes.strava_auth import router as strava_auth_router
 from convertreino.api.routes.strava_sync import router as strava_sync_router
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(title="ConverTreino", lifespan=lifespan)
     app.include_router(health_router)
+    app.include_router(chat_router)
     app.include_router(strava_auth_router)
     app.include_router(strava_sync_router)
     app.include_router(strava_webhooks_router)

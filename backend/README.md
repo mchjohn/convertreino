@@ -23,6 +23,9 @@ uv run alembic upgrade head
 |----------|-------------|------------------|-----------|
 | `JWT_SECRET` | Sim (produção) | `test-jwt-secret` | Chave HS256 para assinatura dos access tokens |
 | `JWT_EXPIRES_MINUTES` | Não | `60` | TTL do access token em minutos |
+| `OPENAI_API_KEY` | Sim (chat/produção) | `test-openai-key` | Chave da API OpenAI para o endpoint de chat |
+| `OPENAI_MODEL` | Não | `gpt-4o-mini` | Modelo OpenAI para Chat Completions |
+| `CHAT_MAX_TOOL_ITERATIONS` | Não | `5` | Máximo de rodadas LLM↔tools por request de chat |
 | `STRAVA_CLIENT_ID` | Sim (OAuth) | — | Client ID da app Strava |
 | `STRAVA_CLIENT_SECRET` | Sim (OAuth) | — | Client secret Strava |
 | `STRAVA_REDIRECT_URI` | Sim (OAuth) | — | Redirect URI registrado no Strava |
@@ -65,6 +68,31 @@ TOKEN="<access_token do callback>"
 USER_ID="<user_id do callback>"
 curl -X POST "http://localhost:8000/users/${USER_ID}/sync/strava" \
   -H "Authorization: Bearer ${TOKEN}"
+```
+
+### Chat (SPEC-014)
+
+Perguntas em linguagem natural sobre treinos (requer JWT e `OPENAI_API_KEY`):
+
+```bash
+export OPENAI_API_KEY="sua-chave-openai"
+
+curl -X POST "http://localhost:8000/chat/messages" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"Qual foi minha corrida mais longa?"}]}'
+```
+
+Resposta esperada (`200`):
+
+```json
+{
+  "message": {
+    "role": "assistant",
+    "content": "..."
+  },
+  "tool_calls_made": ["get_longest_run"]
+}
 ```
 
 ## Testes
