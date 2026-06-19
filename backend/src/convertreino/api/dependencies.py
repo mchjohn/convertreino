@@ -1,15 +1,20 @@
 from collections.abc import Callable, Generator
+from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from convertreino.application.jwt_token_service import JwtTokenService
 from convertreino.application.strava_oauth_service import StravaOAuthService
 from convertreino.application.strava_sync_service import StravaSyncService
 from convertreino.application.strava_webhook_processor import StravaWebhookProcessor
+from convertreino.domain.exceptions import InvalidTokenError
 from convertreino.domain.repositories.activity_repository import ActivityRepository
 from convertreino.domain.repositories.user_repository import UserRepository
 from convertreino.infrastructure.config import (
     StravaWebhookSettings,
+    get_jwt_settings,
     get_strava_settings,
     get_strava_webhook_settings,
 )
@@ -27,6 +32,9 @@ _oauth_service_override: StravaOAuthService | None = None
 _sync_service_override: StravaSyncService | None = None
 _webhook_processor_override: StravaWebhookProcessor | None = None
 _webhook_settings_override: StravaWebhookSettings | None = None
+_jwt_service_override: JwtTokenService | None = None
+
+security = HTTPBearer(auto_error=False)
 
 
 def set_oauth_service_override(service: StravaOAuthService | None) -> None:
@@ -47,6 +55,29 @@ def set_webhook_processor_override(processor: StravaWebhookProcessor | None) -> 
 def set_webhook_settings_override(settings: StravaWebhookSettings | None) -> None:
     global _webhook_settings_override
     _webhook_settings_override = settings
+
+
+def set_jwt_service_override(service: JwtTokenService | None) -> None:
+    global _jwt_service_override
+    _jwt_service_override = service
+
+
+def get_jwt_token_service() -> JwtTokenService:
+    if _jwt_service_override is not None:
+        return _jwt_service_override
+    return JwtTokenService(get_jwt_settings())
+
+
+def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),  # noqa: B008
+    jwt_service: JwtTokenService = Depends(get_jwt_token_service),  # noqa: B008
+) -> UUID:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        return jwt_service.decode_access_token(credentials.credentials)
+    except InvalidTokenError as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
 
 def _build_oauth_service(session: Session) -> StravaOAuthService:
@@ -96,7 +127,7 @@ def get_db_session() -> Generator[Session, None, None]:
 
 
 def get_strava_oauth_service(
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db_session),  # noqa: B008
 ) -> StravaOAuthService:
     if _oauth_service_override is not None:
         return _oauth_service_override
@@ -104,7 +135,7 @@ def get_strava_oauth_service(
 
 
 def get_strava_sync_service(
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db_session),  # noqa: B008
 ) -> StravaSyncService:
     if _sync_service_override is not None:
         return _sync_service_override

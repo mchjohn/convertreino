@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from convertreino.api.dependencies import get_strava_sync_service
+from convertreino.api.dependencies import get_current_user_id, get_strava_sync_service
 from convertreino.application.strava_sync_service import StravaSyncService, SyncResult
 from convertreino.domain.exceptions import StravaApiError, StravaAuthError, UserNotFoundError
 
@@ -12,8 +12,11 @@ router = APIRouter(prefix="/users", tags=["strava-sync"])
 @router.post("/{user_id}/sync/strava")
 def sync_strava(
     user_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),  # noqa: B008
     sync_service: StravaSyncService = Depends(get_strava_sync_service),  # noqa: B008
 ) -> SyncResult:
+    if current_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         return sync_service.sync_user(user_id)
     except UserNotFoundError as exc:

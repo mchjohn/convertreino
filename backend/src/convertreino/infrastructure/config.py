@@ -1,6 +1,9 @@
 import os
+import sys
 from dataclasses import dataclass
 from urllib.parse import urlencode
+
+from convertreino.application.jwt_token_service import JwtSettings
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +41,24 @@ STRAVA_AUTHORIZE_URL = "https://www.strava.com/oauth/authorize"
 STRAVA_DEFAULT_SCOPE = "read,activity:read_all"
 
 
-def build_authorization_url(*, client_id: str, redirect_uri: str, scope: str = STRAVA_DEFAULT_SCOPE) -> str:
+def _is_test_runtime() -> bool:
+    return "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST") is not None
+
+
+def get_jwt_settings() -> JwtSettings:
+    secret = os.environ.get("JWT_SECRET", "")
+    if not secret and _is_test_runtime():
+        secret = "test-jwt-secret"
+    expires_raw = os.environ.get("JWT_EXPIRES_MINUTES", "60")
+    return JwtSettings(secret=secret, expires_minutes=int(expires_raw))
+
+
+def build_authorization_url(
+    *,
+    client_id: str,
+    redirect_uri: str,
+    scope: str = STRAVA_DEFAULT_SCOPE,
+) -> str:
     params = urlencode(
         {
             "client_id": client_id,

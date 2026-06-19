@@ -33,6 +33,7 @@ jobs:
       STRAVA_CLIENT_ID: fake-client-id
       STRAVA_CLIENT_SECRET: fake-client-secret
       STRAVA_REDIRECT_URI: http://localhost:8000/auth/strava/callback
+      JWT_SECRET: test-jwt-secret-for-ci
 
     steps:
       - uses: actions/checkout@v4
@@ -56,9 +57,10 @@ jobs:
 
       - name: Pytest
         run: |
-          uv run pytest --cov=convertreino.domain --cov=convertreino.mcp --cov-report=term-missing
+          uv run pytest --cov=convertreino.domain --cov=convertreino.mcp --cov=convertreino.application --cov-report=term-missing
           uv run coverage report --include='*/convertreino/domain/*' --fail-under=95
           uv run coverage report --include='*/convertreino/mcp/*' --fail-under=90
+          uv run coverage report --include='*/convertreino/application/*' --fail-under=80
 
       - name: Alembic upgrade
         env:

@@ -10,9 +10,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from convertreino.api.dependencies import (
     build_test_oauth_service,
+    set_jwt_service_override,
     set_oauth_service_override,
 )
 from convertreino.api.main import create_app
+from convertreino.application.jwt_token_service import JwtSettings, JwtTokenService
 from convertreino.domain.exceptions import DomainIntegrityError
 from convertreino.infrastructure.db.models import Base, UserModel
 from convertreino.infrastructure.repositories.in_memory_user_repository import (
@@ -46,8 +48,10 @@ def _postgres_available() -> bool:
 @pytest.fixture(autouse=True)
 def reset_oauth_override():
     set_oauth_service_override(None)
+    set_jwt_service_override(None)
     yield
     set_oauth_service_override(None)
+    set_jwt_service_override(None)
 
 
 @pytest.fixture
@@ -72,12 +76,17 @@ def db_session() -> Generator[Session, None, None]:
         engine.dispose()
 
 
+def _test_jwt_service() -> JwtTokenService:
+    return JwtTokenService(JwtSettings(secret="test-jwt-secret", expires_minutes=60))
+
+
 @pytest.fixture
 def client(db_session: Session) -> TestClient:
     fake_strava = FakeStravaApiClient(athlete_id=77_777)
     user_repo = SqlAlchemyUserRepository(db_session)
     service = build_test_oauth_service(user_repo=user_repo, strava_client=fake_strava)
     set_oauth_service_override(service)
+    set_jwt_service_override(_test_jwt_service())
     return TestClient(create_app())
 
 
@@ -104,7 +113,13 @@ def test_callback_creates_user_and_returns_user_id(client: TestClient, db_sessio
 
     # Assert
     assert response.status_code == 200
-    user_id = UUID(response.json()["user_id"])
+    body = response.json()
+    user_id = UUID(body["user_id"])
+    assert body["token_type"] == "bearer"
+    assert body["expires_in"] == 3600
+    assert body["access_token"]
+    jwt_service = _test_jwt_service()
+    assert jwt_service.decode_access_token(body["access_token"]) == user_id
     repo = SqlAlchemyUserRepository(db_session)
     user = repo.get_by_id(user_id)
     assert user is not None
@@ -113,9 +128,10 @@ def test_callback_creates_user_and_returns_user_id(client: TestClient, db_sessio
 
 
 def test_callback_updates_existing_user_on_re_oauth(client: TestClient, db_session: Session):
-    # Arrange — CN-2 integration
+    # Arrange — CN-2 integration / CB-1 JWT
     first = client.get("/auth/strava/callback", params={"code": "first-code"})
     user_id = first.json()["user_id"]
+    first_token = first.json()["access_token"]
 
     # Act
     second = client.get("/auth/strava/callback", params={"code": "second-code"})
@@ -123,6 +139,10 @@ def test_callback_updates_existing_user_on_re_oauth(client: TestClient, db_sessi
     # Assert
     assert second.status_code == 200
     assert second.json()["user_id"] == user_id
+    second_token = second.json()["access_token"]
+    jwt_service = _test_jwt_service()
+    assert jwt_service.decode_access_token(first_token) == UUID(user_id)
+    assert jwt_service.decode_access_token(second_token) == UUID(user_id)
     repo = SqlAlchemyUserRepository(db_session)
     user = repo.get_by_strava_athlete_id(77_777)
     assert user is not None

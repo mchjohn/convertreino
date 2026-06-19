@@ -264,6 +264,7 @@ dependencies = [
     { name = "fastmcp" },
     { name = "httpx" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -284,6 +285,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.3" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.10.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },

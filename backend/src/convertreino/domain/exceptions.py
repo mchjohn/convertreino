@@ -20,3 +20,7 @@ class StravaActivityNotFoundError(Exception):
 
 class UserNotFoundError(Exception):
     """Raised when a requested user does not exist."""
+
+
+class InvalidTokenError(Exception):
+    """Raised when a JWT is malformed, invalid, expired, or missing required claims."""

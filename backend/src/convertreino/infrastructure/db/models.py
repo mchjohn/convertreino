@@ -17,7 +17,9 @@ class UserModel(Base):
     strava_athlete_id: Mapped[int | None] = mapped_column(Integer, nullable=True, unique=True)
     access_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
     refresh_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     activities: Mapped[list["ActivityModel"]] = relationship(back_populates="user")
 

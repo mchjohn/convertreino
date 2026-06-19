@@ -1,15 +1,20 @@
 import os
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from convertreino.api.dependencies import build_test_sync_service, set_sync_service_override
+from convertreino.api.dependencies import (
+    build_test_sync_service,
+    set_jwt_service_override,
+    set_sync_service_override,
+)
 from convertreino.api.main import create_app
+from convertreino.application.jwt_token_service import JwtSettings, JwtTokenService
 from convertreino.domain.exceptions import DomainIntegrityError
 from convertreino.infrastructure.db.models import Base
 from convertreino.infrastructure.repositories.sqlalchemy_activity_repository import (
@@ -54,8 +59,19 @@ def _create_unique_external_id_index(engine) -> None:
 @pytest.fixture(autouse=True)
 def reset_sync_override():
     set_sync_service_override(None)
+    set_jwt_service_override(None)
     yield
     set_sync_service_override(None)
+    set_jwt_service_override(None)
+
+
+def _jwt_service() -> JwtTokenService:
+    return JwtTokenService(JwtSettings(secret="test-jwt-secret", expires_minutes=60))
+
+
+def _auth_headers(user_id: UUID) -> dict[str, str]:
+    token = _jwt_service().create_access_token(user_id)
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
@@ -119,7 +135,7 @@ def test_upsert_creates_then_updates_without_duplicates(db_session: Session):
 
 
 def test_sync_endpoint_returns_counts(db_session: Session):
-    # Arrange — CN-4
+    # Arrange — CN-2 integration
     user = _save_linked_user(db_session)
     activities = [
         build_strava_activity_summary(id=1001),
@@ -135,10 +151,14 @@ def test_sync_endpoint_returns_counts(db_session: Session):
         page_commit=db_session.commit,
     )
     set_sync_service_override(service)
+    set_jwt_service_override(_jwt_service())
     client = TestClient(create_app())
 
     # Act
-    response = client.post(f"/users/{user.id}/sync/strava")
+    response = client.post(
+        f"/users/{user.id}/sync/strava",
+        headers=_auth_headers(user.id),
+    )
 
     # Assert
     assert response.status_code == 200
@@ -159,19 +179,71 @@ def test_sync_endpoint_returns_404_for_unknown_user(db_session: Session):
         strava_client=FakeStravaApiClient(),
     )
     set_sync_service_override(service)
+    set_jwt_service_override(_jwt_service())
     client = TestClient(create_app())
     unknown_id = uuid4()
 
     # Act
-    response = client.post(f"/users/{unknown_id}/sync/strava")
+    response = client.post(
+        f"/users/{unknown_id}/sync/strava",
+        headers=_auth_headers(unknown_id),
+    )
 
     # Assert
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
 
 
+def test_sync_endpoint_returns_401_without_authorization(db_session: Session):
+    # Arrange — CE-1 JWT
+    user = _save_linked_user(db_session)
+    user_repo = SqlAlchemyUserRepository(db_session)
+    activity_repo = SqlAlchemyActivityRepository(db_session)
+    service = build_test_sync_service(
+        user_repo=user_repo,
+        activity_repo=activity_repo,
+        strava_client=FakeStravaApiClient(),
+    )
+    set_sync_service_override(service)
+    set_jwt_service_override(_jwt_service())
+    client = TestClient(create_app())
+
+    # Act
+    response = client.post(f"/users/{user.id}/sync/strava")
+
+    # Assert
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+
+
+def test_sync_endpoint_returns_403_on_ownership_mismatch(db_session: Session):
+    # Arrange — CE-4 JWT
+    user = _save_linked_user(db_session)
+    other_user_id = uuid4()
+    user_repo = SqlAlchemyUserRepository(db_session)
+    activity_repo = SqlAlchemyActivityRepository(db_session)
+    service = build_test_sync_service(
+        user_repo=user_repo,
+        activity_repo=activity_repo,
+        strava_client=FakeStravaApiClient(),
+    )
+    set_sync_service_override(service)
+    set_jwt_service_override(_jwt_service())
+    client = TestClient(create_app())
+
+    # Act
+    response = client.post(
+        f"/users/{other_user_id}/sync/strava",
+        headers=_auth_headers(user.id),
+    )
+
+    # Assert
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Forbidden"
+
+
 def test_sync_endpoint_returns_502_on_strava_server_error(db_session: Session):
-    # Arrange — CE-4 integration
+    # Arrange — CE-4 integration (Strava API)
     user = _save_linked_user(db_session)
     fake_strava = FakeStravaApiClient(
         activities=[build_strava_activity_summary(id=2001)],
@@ -186,10 +258,14 @@ def test_sync_endpoint_returns_502_on_strava_server_error(db_session: Session):
         page_commit=db_session.commit,
     )
     set_sync_service_override(service)
+    set_jwt_service_override(_jwt_service())
     client = TestClient(create_app())
 
     # Act
-    response = client.post(f"/users/{user.id}/sync/strava")
+    response = client.post(
+        f"/users/{user.id}/sync/strava",
+        headers=_auth_headers(user.id),
+    )
 
     # Assert
     assert response.status_code == 502
