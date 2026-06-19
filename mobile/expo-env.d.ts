@@ -1,3 +1,3 @@
-/// <reference types="jest" />
+/// <reference types="expo/types" />
 
-export {};
+// NOTE: This file should not be edited and should be in your git ignore

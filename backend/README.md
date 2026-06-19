@@ -19,6 +19,14 @@ uv run alembic upgrade head
 
 ### Variáveis de ambiente
 
+Copie o template e preencha os valores:
+
+```bash
+cp .env.example .env
+```
+
+O arquivo `backend/.env` é carregado automaticamente ao iniciar a API, rodar migrations (`alembic`) ou importar módulos de configuração. Variáveis já definidas no shell têm prioridade sobre o `.env`.
+
 | Variável | Obrigatória | Default (testes) | Descrição |
 |----------|-------------|------------------|-----------|
 | `JWT_SECRET` | Sim (produção) | `test-jwt-secret` | Chave HS256 para assinatura dos access tokens |
@@ -35,14 +43,7 @@ uv run alembic upgrade head
 
 1. Crie uma aplicação em [developers.strava.com](https://developers.strava.com) → **My API Application**.
 2. Configure **Authorization Callback Domain** compatível com o redirect (ex.: `localhost` em dev).
-3. Exporte as variáveis:
-
-```bash
-export STRAVA_CLIENT_ID="seu-client-id"
-export STRAVA_CLIENT_SECRET="seu-client-secret"
-export STRAVA_REDIRECT_URI="http://localhost:8000/auth/strava/callback"
-export JWT_SECRET="sua-chave-secreta-com-pelo-menos-32-caracteres"
-```
+3. Configure as variáveis em `.env` (veja `.env.example`) ou exporte no shell.
 
 4. Inicie a API e abra a URL de autorização:
 
@@ -90,8 +91,6 @@ curl -X POST "http://localhost:8000/auth/strava/token" \
 Perguntas em linguagem natural sobre treinos (requer JWT e `OPENAI_API_KEY`):
 
 ```bash
-export OPENAI_API_KEY="sua-chave-openai"
-
 curl -X POST "http://localhost:8000/chat/messages" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \

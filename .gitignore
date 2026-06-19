@@ -1,7 +1,10 @@
 # Backend
 .venv
 __pycache__
+backend/.env
 
 # Mobile
 mobile/node_modules
 mobile/coverage
+mobile/.env
+mobile/.expo

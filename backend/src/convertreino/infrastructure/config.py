@@ -1,3 +1,5 @@
+import convertreino.infrastructure.load_env  # noqa: F401
+
 import os
 import sys
 from dataclasses import dataclass
