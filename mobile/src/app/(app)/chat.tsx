@@ -48,11 +48,14 @@ export default function ChatScreen() {
           await handleUnauthorized();
           return;
         }
+        const llmLimitMessage =
+          "Limite do serviço de IA atingido. Tente novamente mais tarde.";
         const message =
           error instanceof ApiError
             ? error.status === 502
-              ? error.detail === "LLM quota exceeded"
-                ? "Cota da OpenAI esgotada. Adicione créditos em platform.openai.com."
+              ? error.detail === "LLM quota exceeded" ||
+                error.detail === "LLM rate limit exceeded"
+                ? llmLimitMessage
                 : "Serviço temporariamente indisponível. Tente novamente."
               : error.status === 422
                 ? "Não foi possível enviar a mensagem."

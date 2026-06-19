@@ -630,7 +630,7 @@ Fluxo de `handleSend`:
 - [ ] Cobertura >= 70% em `mobile/src/services/*` e `mobile/src/lib/chatMappers.ts`
 - [ ] `mobile/README.md` com env vars e instruções de redirect no painel Strava
 - [ ] `STRAVA_MOBILE_REDIRECT_URI` documentada no `backend/README.md`
-- [ ] Roadmap da SPEC-014 atualizado (`period_resolver` → SPEC-016+)
+- [ ] Roadmap da SPEC-014 atualizado (`period_resolver` → SPEC-018+)
 - [ ] Não contradiz contratos de SPEC-002, SPEC-003, SPEC-013 nem SPEC-014
 
 ---
@@ -747,8 +747,9 @@ Testes mobile usam mocks de `fetch`, `expo-secure-store` e `react-native-gifted-
 
 | Spec futura | Conteúdo                                                                                    |
 |-------------|---------------------------------------------------------------------------------------------|
-| SPEC-016    | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
-| SPEC-017+   | Streaming SSE, persistência de conversas, logout/refresh, rate limiting, testes E2E com LLM real, CI mobile |
+| SPEC-017    | Groq Cloud como provider LLM alternativo                                                   |
+| SPEC-018    | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
+| SPEC-019+   | Streaming SSE, persistência de conversas, logout/refresh, rate limiting, testes E2E com LLM real, CI mobile |
 
 ---
 

@@ -31,13 +31,18 @@ O arquivo `backend/.env` é carregado automaticamente ao iniciar a API, rodar mi
 |----------|-------------|------------------|-----------|
 | `JWT_SECRET` | Sim (produção) | `test-jwt-secret` | Chave HS256 para assinatura dos access tokens |
 | `JWT_EXPIRES_MINUTES` | Não | `60` | TTL do access token em minutos |
-| `OPENAI_API_KEY` | Sim (chat/produção) | `test-openai-key` | Chave da API OpenAI para o endpoint de chat |
+| `LLM_PROVIDER` | Não | `openai` | Provider LLM ativo: `openai` ou `groq` |
+| `OPENAI_API_KEY` | Sim* (provider=openai) | `test-openai-key` | Chave da API OpenAI para o endpoint de chat |
 | `OPENAI_MODEL` | Não | `gpt-4o-mini` | Modelo OpenAI para Chat Completions |
+| `GROQ_API_KEY` | Sim* (provider=groq) | `test-groq-key` | Chave da API Groq Cloud |
+| `GROQ_MODEL` | Não | `llama-3.3-70b-versatile` | Modelo Groq com suporte a tool calling |
 | `CHAT_MAX_TOOL_ITERATIONS` | Não | `5` | Máximo de rodadas LLM↔tools por request de chat |
 | `STRAVA_CLIENT_ID` | Sim (OAuth) | — | Client ID da app Strava |
 | `STRAVA_CLIENT_SECRET` | Sim (OAuth) | — | Client secret Strava |
 | `STRAVA_REDIRECT_URI` | Sim (OAuth) | — | Redirect URI registrado no Strava |
 | `STRAVA_MOBILE_REDIRECT_URI` | Não | valor de `STRAVA_REDIRECT_URI` | Redirect URI usado na troca do `code` OAuth emitido pelo app mobile (ex.: `convertreino://oauth/callback`) |
+
+\* A chave do provider ativo (`OPENAI_API_KEY` ou `GROQ_API_KEY`) é obrigatória em produção.
 
 ### OAuth Strava + JWT (SPEC-002 / SPEC-013)
 
@@ -86,9 +91,19 @@ curl -X POST "http://localhost:8000/auth/strava/token" \
   -d '{"code":"<authorization_code>"}'
 ```
 
-### Chat (SPEC-014)
+### Chat (SPEC-014 / SPEC-017)
 
-Perguntas em linguagem natural sobre treinos (requer JWT e `OPENAI_API_KEY`):
+Perguntas em linguagem natural sobre treinos (requer JWT e chave do provider LLM ativo):
+
+```bash
+# OpenAI (default)
+export LLM_PROVIDER=openai
+export OPENAI_API_KEY=sk-...
+
+# Groq Cloud (alternativa)
+# export LLM_PROVIDER=groq
+# export GROQ_API_KEY=gsk_...
+# export GROQ_MODEL=llama-3.3-70b-versatile
 
 ```bash
 curl -X POST "http://localhost:8000/chat/messages" \

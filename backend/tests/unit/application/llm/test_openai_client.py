@@ -3,10 +3,10 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from openai import APIStatusError
+from openai import APIStatusError, RateLimitError
 
 from convertreino.application.llm.client import LLMClient
-from convertreino.application.llm.openai_client import OpenAILLMClient
+from convertreino.application.llm.openai_client import GROQ_BASE_URL, OpenAICompatibleLLMClient
 from convertreino.application.llm.types import ChatMessage, ToolDefinition
 from convertreino.domain.exceptions import LLMProviderError
 
@@ -19,13 +19,19 @@ def test_llm_client_complete_signature_matches_contract():
     assert list(signature.parameters) == ["self", "messages", "tools"]
 
 
-def test_openai_llm_client_requires_api_key():
+def test_openai_compatible_llm_client_requires_api_key():
     # Arrange / Act / Assert — CE-5
     with pytest.raises(ValueError, match="OPENAI_API_KEY is required"):
-        OpenAILLMClient(api_key="")
+        OpenAICompatibleLLMClient(api_key="")
 
 
-def test_openai_llm_client_maps_messages_tools_and_response():
+def test_openai_compatible_llm_client_requires_groq_api_key():
+    # Arrange / Act / Assert
+    with pytest.raises(ValueError, match="GROQ_API_KEY is required"):
+        OpenAICompatibleLLMClient(api_key="", provider_name="groq")
+
+
+def test_openai_compatible_llm_client_maps_messages_tools_and_response():
     # Arrange
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
@@ -41,7 +47,7 @@ def test_openai_llm_client_maps_messages_tools_and_response():
     mock_client.chat.completions.create.return_value = mock_response
 
     with patch("convertreino.application.llm.openai_client.OpenAI", return_value=mock_client):
-        client = OpenAILLMClient(api_key="test-key", model="gpt-4o-mini")
+        client = OpenAICompatibleLLMClient(api_key="test-key", model="gpt-4o-mini")
 
     messages = [
         ChatMessage(role="system", content="system"),
@@ -69,7 +75,33 @@ def test_openai_llm_client_maps_messages_tools_and_response():
     assert completion.message.role == "assistant"
 
 
-def test_openai_llm_client_maps_assistant_message_with_tool_calls_for_follow_up():
+def test_openai_compatible_llm_client_uses_custom_base_url():
+    # Arrange
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "ok"
+    mock_response.choices[0].message.tool_calls = []
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = mock_response
+    mock_openai_ctor = MagicMock(return_value=mock_client)
+
+    with patch("convertreino.application.llm.openai_client.OpenAI", mock_openai_ctor):
+        client = OpenAICompatibleLLMClient(
+            api_key="test-key",
+            model="llama-3.3-70b-versatile",
+            base_url=GROQ_BASE_URL,
+            provider_name="groq",
+        )
+
+    # Act
+    client.complete([ChatMessage(role="user", content="oi")], [])
+
+    # Assert
+    mock_openai_ctor.assert_called_once_with(api_key="test-key", base_url=GROQ_BASE_URL)
+
+
+def test_openai_compatible_llm_client_maps_assistant_message_with_tool_calls_for_follow_up():
     # Arrange
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
@@ -80,7 +112,7 @@ def test_openai_llm_client_maps_assistant_message_with_tool_calls_for_follow_up(
     mock_client.chat.completions.create.return_value = mock_response
 
     with patch("convertreino.application.llm.openai_client.OpenAI", return_value=mock_client):
-        client = OpenAILLMClient(api_key="test-key")
+        client = OpenAICompatibleLLMClient(api_key="test-key")
 
     conversation = [
         ChatMessage(role="assistant", content="", tool_calls=()),
@@ -96,7 +128,7 @@ def test_openai_llm_client_maps_assistant_message_with_tool_calls_for_follow_up(
     assert sent_messages[-1]["tool_call_id"] == "call-1"
 
 
-def test_openai_llm_client_raises_llm_provider_error_on_api_failure():
+def test_openai_compatible_llm_client_raises_llm_provider_error_on_api_failure():
     # Arrange
     mock_client = MagicMock()
     mock_client.chat.completions.create.side_effect = APIStatusError(
@@ -106,8 +138,42 @@ def test_openai_llm_client_raises_llm_provider_error_on_api_failure():
     )
 
     with patch("convertreino.application.llm.openai_client.OpenAI", return_value=mock_client):
-        client = OpenAILLMClient(api_key="test-key")
+        client = OpenAICompatibleLLMClient(api_key="test-key")
 
     # Act / Assert
     with pytest.raises(LLMProviderError, match="LLM provider unavailable"):
+        client.complete([ChatMessage(role="user", content="oi")], [])
+
+
+def test_openai_compatible_llm_client_raises_rate_limit_error():
+    # Arrange
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = RateLimitError(
+        "rate limit",
+        response=MagicMock(status_code=429),
+        body=None,
+    )
+
+    with patch("convertreino.application.llm.openai_client.OpenAI", return_value=mock_client):
+        client = OpenAICompatibleLLMClient(api_key="test-key")
+
+    # Act / Assert — CE-3
+    with pytest.raises(LLMProviderError, match="LLM rate limit exceeded"):
+        client.complete([ChatMessage(role="user", content="oi")], [])
+
+
+def test_openai_compatible_llm_client_raises_quota_error():
+    # Arrange
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = RateLimitError(
+        "insufficient_quota",
+        response=MagicMock(status_code=429),
+        body=None,
+    )
+
+    with patch("convertreino.application.llm.openai_client.OpenAI", return_value=mock_client):
+        client = OpenAICompatibleLLMClient(api_key="test-key")
+
+    # Act / Assert — CE-4
+    with pytest.raises(LLMProviderError, match="LLM quota exceeded"):
         client.complete([ChatMessage(role="user", content="oi")], [])

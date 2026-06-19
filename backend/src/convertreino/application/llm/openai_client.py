@@ -1,17 +1,39 @@
 import json
-from typing import Any
+from typing import Any, Literal
 
-from openai import APIConnectionError, APIStatusError, APITimeoutError, OpenAI
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    OpenAI,
+    RateLimitError,
+)
 
 from convertreino.application.llm.types import ChatMessage, LLMCompletion, ToolCall, ToolDefinition
 from convertreino.domain.exceptions import LLMProviderError
 
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
-class OpenAILLMClient:
-    def __init__(self, *, api_key: str, model: str = "gpt-4o-mini") -> None:
+
+class OpenAICompatibleLLMClient:
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str = "gpt-4o-mini",
+        base_url: str | None = None,
+        provider_name: Literal["openai", "groq"] = "openai",
+    ) -> None:
         if not api_key:
-            raise ValueError("OPENAI_API_KEY is required")
-        self._client = OpenAI(api_key=api_key)
+            key_name = "GROQ_API_KEY" if provider_name == "groq" else "OPENAI_API_KEY"
+            raise ValueError(f"{key_name} is required")
+        client_kwargs: dict[str, Any] = {"api_key": api_key}
+        effective_base_url = base_url
+        if provider_name == "groq" and effective_base_url is None:
+            effective_base_url = GROQ_BASE_URL
+        if effective_base_url is not None:
+            client_kwargs["base_url"] = effective_base_url
+        self._client = OpenAI(**client_kwargs)
         self._model = model
 
     def complete(
@@ -29,10 +51,13 @@ class OpenAILLMClient:
             request_kwargs["tool_choice"] = "auto"
         try:
             response = self._client.chat.completions.create(**request_kwargs)
-        except (APIConnectionError, APITimeoutError, APIStatusError) as exc:
+        except (APIConnectionError, APITimeoutError, APIStatusError, RateLimitError) as exc:
             error_message = "LLM provider unavailable"
-            if type(exc).__name__ == "RateLimitError" and "insufficient_quota" in str(exc):
-                error_message = "LLM quota exceeded"
+            if isinstance(exc, RateLimitError):
+                if "insufficient_quota" in str(exc):
+                    error_message = "LLM quota exceeded"
+                else:
+                    error_message = "LLM rate limit exceeded"
             raise LLMProviderError(error_message) from exc
 
         choice = response.choices[0]
@@ -52,6 +77,9 @@ class OpenAILLMClient:
             tool_calls=tool_calls or None,
         )
         return LLMCompletion(message=message, tool_calls=tool_calls)
+
+
+OpenAILLMClient = OpenAICompatibleLLMClient
 
 
 def _parse_arguments(raw: str) -> dict[str, object]:

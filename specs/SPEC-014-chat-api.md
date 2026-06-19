@@ -486,8 +486,8 @@ Padrão de override: `set_chat_orchestrator_override` em `dependencies.py`, espe
 | Spec futura | Conteúdo                                                                                    |
 |-------------|---------------------------------------------------------------------------------------------|
 | SPEC-015    | App mobile Expo: OAuth Strava via deep link, sessão JWT, sync inicial e tela de chat       |
-| SPEC-016    | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
-| SPEC-017+   | Streaming SSE, persistência de conversas, rate limiting, testes E2E com LLM real            |
+| SPEC-017    | Groq Cloud como provider LLM alternativo                                                   |
+| SPEC-018+   | `period_resolver` server-side, streaming SSE, persistência de conversas, rate limiting, testes E2E com LLM real |
 
 ---
 

@@ -60,20 +60,31 @@ def get_jwt_settings() -> JwtSettings:
 
 @dataclass(frozen=True, slots=True)
 class ChatSettings:
+    llm_provider: str
     openai_api_key: str
     openai_model: str
+    groq_api_key: str
+    groq_model: str
     max_tool_iterations: int
 
 
 def get_chat_settings() -> ChatSettings:
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key and _is_test_runtime():
-        api_key = "test-openai-key"
-    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    llm_provider = os.environ.get("LLM_PROVIDER", "openai").strip().lower()
+    openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not openai_api_key and _is_test_runtime():
+        openai_api_key = "test-openai-key"
+    groq_api_key = os.environ.get("GROQ_API_KEY", "")
+    if not groq_api_key and _is_test_runtime():
+        groq_api_key = "test-groq-key"
+    openai_model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     max_iterations_raw = os.environ.get("CHAT_MAX_TOOL_ITERATIONS", "5")
     return ChatSettings(
-        openai_api_key=api_key,
-        openai_model=model,
+        llm_provider=llm_provider,
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
+        groq_api_key=groq_api_key,
+        groq_model=groq_model,
         max_tool_iterations=int(max_iterations_raw),
     )
 

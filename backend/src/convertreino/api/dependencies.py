@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from convertreino.application.chat_orchestrator import ChatOrchestrator
 from convertreino.application.chat_tools import ChatToolRegistry
 from convertreino.application.jwt_token_service import JwtTokenService
-from convertreino.application.llm.openai_client import OpenAILLMClient
+from convertreino.application.llm.factory import build_llm_client
 from convertreino.application.strava_oauth_service import StravaOAuthService
 from convertreino.application.strava_sync_service import StravaSyncService
 from convertreino.application.strava_webhook_processor import StravaWebhookProcessor
@@ -182,10 +182,7 @@ def _build_chat_orchestrator(session: Session) -> ChatOrchestrator:
     settings = get_chat_settings()
     activity_repo = SqlAlchemyActivityRepository(session)
     tool_registry = ChatToolRegistry(activity_repo)
-    llm_client = OpenAILLMClient(
-        api_key=settings.openai_api_key,
-        model=settings.openai_model,
-    )
+    llm_client = build_llm_client(settings)
     return ChatOrchestrator(
         llm_client=llm_client,
         tool_registry=tool_registry,
