@@ -27,6 +27,25 @@ def _service(
     )
 
 
+def test_exchange_code_with_mobile_redirect_uses_mobile_uri():
+    # Arrange — SPEC-015 mobile token exchange
+    repo = InMemoryUserRepository()
+    client = FakeStravaApiClient(athlete_id=ATHLETE_ID)
+    service = StravaOAuthService(
+        user_repo=repo,
+        strava_client=client,
+        client_id=CLIENT_ID,
+        redirect_uri=REDIRECT_URI,
+        mobile_redirect_uri="convertreino://oauth/callback",
+    )
+
+    # Act
+    service.exchange_code("mobile-code", mobile=True)
+
+    # Assert
+    assert client.exchange_calls == ["mobile-code"]
+
+
 def test_exchange_code_creates_user_with_strava_fields():
     # Arrange — CN-1
     repo = InMemoryUserRepository()

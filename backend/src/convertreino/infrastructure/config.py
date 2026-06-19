@@ -11,6 +11,7 @@ class StravaSettings:
     client_id: str
     client_secret: str
     redirect_uri: str
+    mobile_redirect_uri: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,10 +31,12 @@ def get_strava_settings() -> StravaSettings:
     client_id = os.environ.get("STRAVA_CLIENT_ID", "")
     client_secret = os.environ.get("STRAVA_CLIENT_SECRET", "")
     redirect_uri = os.environ.get("STRAVA_REDIRECT_URI", "")
+    mobile_redirect_uri = os.environ.get("STRAVA_MOBILE_REDIRECT_URI", redirect_uri)
     return StravaSettings(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=redirect_uri,
+        mobile_redirect_uri=mobile_redirect_uri,
     )
 
 

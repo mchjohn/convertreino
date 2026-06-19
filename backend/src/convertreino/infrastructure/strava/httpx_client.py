@@ -25,15 +25,16 @@ class HttpxStravaApiClient:
         self._client_id = client_id
         self._client_secret = client_secret
 
-    def exchange_code(self, code: str) -> StravaTokenResponse:
-        return self._request_token(
-            {
-                "client_id": self._client_id,
-                "client_secret": self._client_secret,
-                "code": code,
-                "grant_type": "authorization_code",
-            }
-        )
+    def exchange_code(self, code: str, *, redirect_uri: str | None = None) -> StravaTokenResponse:
+        payload: dict[str, str] = {
+            "client_id": self._client_id,
+            "client_secret": self._client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+        }
+        if redirect_uri is not None:
+            payload["redirect_uri"] = redirect_uri
+        return self._request_token(payload)
 
     def refresh_token(self, refresh_token: str) -> StravaTokenResponse:
         return self._request_token(

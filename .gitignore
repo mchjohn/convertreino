@@ -3,3 +3,5 @@
 __pycache__
 
 # Mobile
+mobile/node_modules
+mobile/coverage

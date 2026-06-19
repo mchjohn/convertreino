@@ -29,6 +29,7 @@ uv run alembic upgrade head
 | `STRAVA_CLIENT_ID` | Sim (OAuth) | — | Client ID da app Strava |
 | `STRAVA_CLIENT_SECRET` | Sim (OAuth) | — | Client secret Strava |
 | `STRAVA_REDIRECT_URI` | Sim (OAuth) | — | Redirect URI registrado no Strava |
+| `STRAVA_MOBILE_REDIRECT_URI` | Não | valor de `STRAVA_REDIRECT_URI` | Redirect URI usado na troca do `code` OAuth emitido pelo app mobile (ex.: `convertreino://oauth/callback`) |
 
 ### OAuth Strava + JWT (SPEC-002 / SPEC-013)
 
@@ -68,6 +69,20 @@ TOKEN="<access_token do callback>"
 USER_ID="<user_id do callback>"
 curl -X POST "http://localhost:8000/users/${USER_ID}/sync/strava" \
   -H "Authorization: Bearer ${TOKEN}"
+```
+
+### OAuth mobile (SPEC-015)
+
+O app Expo troca o `code` capturado via deep link em `POST /auth/strava/token` (mesmo schema de resposta do callback web). Quando o redirect mobile difere do web, configure:
+
+```bash
+export STRAVA_MOBILE_REDIRECT_URI="convertreino://oauth/callback"
+```
+
+```bash
+curl -X POST "http://localhost:8000/auth/strava/token" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"<authorization_code>"}'
 ```
 
 ### Chat (SPEC-014)

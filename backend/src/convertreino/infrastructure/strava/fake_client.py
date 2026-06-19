@@ -46,7 +46,7 @@ class FakeStravaApiClient:
         self.list_activities_calls: list[tuple[int, int]] = []
         self.get_activity_calls: list[tuple[str, int]] = []
 
-    def exchange_code(self, code: str) -> StravaTokenResponse:
+    def exchange_code(self, code: str, *, redirect_uri: str | None = None) -> StravaTokenResponse:
         self.exchange_calls.append(code)
         if self._fail_server_error:
             raise StravaAuthError("Strava API unavailable: 503")

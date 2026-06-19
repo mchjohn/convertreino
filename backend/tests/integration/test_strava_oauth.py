@@ -156,6 +156,7 @@ def test_callback_returns_400_on_invalid_code(db_session: Session):
     set_oauth_service_override(
         build_test_oauth_service(user_repo=user_repo, strava_client=fake_strava)
     )
+    set_jwt_service_override(_test_jwt_service())
     client = TestClient(create_app())
 
     # Act
@@ -164,6 +165,55 @@ def test_callback_returns_400_on_invalid_code(db_session: Session):
     # Assert
     assert response.status_code == 400
     assert _user_count(db_session) == 0
+
+
+def test_token_exchange_creates_user_and_returns_jwt(client: TestClient, db_session: Session):
+    # Arrange — CN-2 mobile integration
+
+    # Act
+    response = client.post("/auth/strava/token", json={"code": "oauth-code"})
+
+    # Assert
+    assert response.status_code == 200
+    body = response.json()
+    user_id = UUID(body["user_id"])
+    assert body["token_type"] == "bearer"
+    assert body["expires_in"] == 3600
+    assert body["access_token"]
+    jwt_service = _test_jwt_service()
+    assert jwt_service.decode_access_token(body["access_token"]) == user_id
+    repo = SqlAlchemyUserRepository(db_session)
+    user = repo.get_by_id(user_id)
+    assert user is not None
+    assert user.strava_athlete_id == 77_777
+
+
+def test_token_returns_400_on_invalid_code(db_session: Session):
+    # Arrange — CE-1 mobile integration
+    fake_strava = FakeStravaApiClient(fail_exchange=True)
+    user_repo = SqlAlchemyUserRepository(db_session)
+    set_oauth_service_override(
+        build_test_oauth_service(user_repo=user_repo, strava_client=fake_strava)
+    )
+    set_jwt_service_override(_test_jwt_service())
+    client = TestClient(create_app())
+
+    # Act
+    response = client.post("/auth/strava/token", json={"code": "bad-code"})
+
+    # Assert
+    assert response.status_code == 400
+    assert _user_count(db_session) == 0
+
+
+def test_token_returns_422_on_empty_code(client: TestClient):
+    # Arrange — validation
+
+    # Act
+    response = client.post("/auth/strava/token", json={"code": "   "})
+
+    # Assert
+    assert response.status_code == 422
 
 
 def test_in_memory_repo_raises_on_duplicate_strava_athlete_id():

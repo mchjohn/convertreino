@@ -18,11 +18,13 @@ class StravaOAuthService:
         *,
         client_id: str,
         redirect_uri: str,
+        mobile_redirect_uri: str | None = None,
     ) -> None:
         self._user_repo = user_repo
         self._strava_client = strava_client
         self._client_id = client_id
         self._redirect_uri = redirect_uri
+        self._mobile_redirect_uri = mobile_redirect_uri or redirect_uri
 
     def get_authorization_url(self) -> str:
         return build_authorization_url(
@@ -30,9 +32,15 @@ class StravaOAuthService:
             redirect_uri=self._redirect_uri,
         )
 
-    def exchange_code(self, code: str) -> User:
+    def exchange_code(self, code: str, *, mobile: bool = False) -> User:
         try:
-            token_response = self._strava_client.exchange_code(code)
+            if mobile:
+                token_response = self._strava_client.exchange_code(
+                    code,
+                    redirect_uri=self._mobile_redirect_uri,
+                )
+            else:
+                token_response = self._strava_client.exchange_code(code)
         except StravaAuthError:
             raise
 

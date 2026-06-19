@@ -57,7 +57,7 @@ O usuário precisa perguntar em linguagem natural — *"qual foi minha corrida m
 
 - Streaming / SSE (resposta síncrona JSON apenas)
 - Persistência de conversas (tabelas, histórico server-side)
-- `period_resolver.py` server-side — LLM converte períodos via descrições das tools (padrão SPEC-010/012) → SPEC-015+
+- `period_resolver.py` server-side — LLM converte períodos via descrições das tools (padrão SPEC-010/012) → SPEC-016+
 - Testes E2E com OpenAI real (CI usa `FakeLLMClient`)
 - Auth em `/mcp` HTTP
 - Alteração das MCP tools públicas em `/mcp` (continuam com `user_id` no schema para dev/stdio)
@@ -448,7 +448,7 @@ Padrão de override: `set_chat_orchestrator_override` em `dependencies.py`, espe
 **Contexto:** Formato da resposta HTTP.  
 **Opção escolhida:** Response JSON completo após processamento total.  
 **Alternativas rejeitadas:** SSE/streaming token-a-token.  
-**Motivo:** Simplicidade na POC; streaming em spec futura (SPEC-016+).
+**Motivo:** Simplicidade na POC; streaming em spec futura (SPEC-017+).
 
 ### Decisão: Testes sem LLM real no CI
 **Contexto:** Como testar seleção de tools e fluxo do orchestrator.  
@@ -485,8 +485,9 @@ Padrão de override: `set_chat_orchestrator_override` em `dependencies.py`, espe
 
 | Spec futura | Conteúdo                                                                                    |
 |-------------|---------------------------------------------------------------------------------------------|
-| SPEC-015    | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
-| SPEC-016+   | Streaming SSE, persistência de conversas, rate limiting, testes E2E com LLM real            |
+| SPEC-015    | App mobile Expo: OAuth Strava via deep link, sessão JWT, sync inicial e tela de chat       |
+| SPEC-016    | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
+| SPEC-017+   | Streaming SSE, persistência de conversas, rate limiting, testes E2E com LLM real            |
 
 ---
 

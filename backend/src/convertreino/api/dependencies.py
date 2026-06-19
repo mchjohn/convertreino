@@ -102,6 +102,7 @@ def _build_oauth_service(session: Session) -> StravaOAuthService:
         strava_client=strava_client,
         client_id=settings.client_id,
         redirect_uri=settings.redirect_uri,
+        mobile_redirect_uri=settings.mobile_redirect_uri,
     )
 
 
