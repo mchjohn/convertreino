@@ -4,6 +4,7 @@ import * as WebBrowser from "expo-web-browser";
 
 import {
   clearSession,
+  exchangeOAuthCode,
   isSessionValid,
   loadSession,
   startStravaLogin,
@@ -98,5 +99,66 @@ describe("authService", () => {
   it("clearSession remove entrada do SecureStore", async () => {
     await clearSession();
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("convertreino.auth.session");
+  });
+
+  it("exchangeOAuthCode persiste sessão após troca válida", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        user_id: "user-1",
+        access_token: "jwt",
+        token_type: "bearer",
+        expires_in: 3600,
+      }),
+    });
+
+    const session = await exchangeOAuthCode("oauth-code");
+
+    expect(session.userId).toBe("user-1");
+    expect(session.accessToken).toBe("jwt");
+    expect(SecureStore.setItemAsync).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("exchangeOAuthCode reutiliza promise em andamento para o mesmo code", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    (global.fetch as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    const first = exchangeOAuthCode("same-code");
+    const second = exchangeOAuthCode("same-code");
+
+    resolveFetch({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        user_id: "user-1",
+        access_token: "jwt",
+        token_type: "bearer",
+        expires_in: 3600,
+      }),
+    });
+
+    const [sessionA, sessionB] = await Promise.all([first, second]);
+
+    expect(sessionA).toEqual(sessionB);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("exchangeOAuthCode propaga erro da troca de code", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: async () => ({ detail: "invalid code" }),
+    });
+
+    await expect(exchangeOAuthCode("bad-code")).rejects.toMatchObject({ status: 400 });
+    expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
   });
 });

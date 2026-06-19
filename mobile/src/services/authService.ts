@@ -13,6 +13,7 @@ import { apiFetch } from "@/services/apiClient";
 WebBrowser.maybeCompleteAuthSession();
 
 const SESSION_KEY = "convertreino.auth.session";
+const inflightCodeExchanges = new Map<string, Promise<AuthSession>>();
 
 function sessionFromTokenResponse(response: TokenResponse): AuthSession {
   return {
@@ -59,6 +60,19 @@ async function exchangeCodeForSession(code: string): Promise<AuthSession> {
   return session;
 }
 
+export function exchangeOAuthCode(code: string): Promise<AuthSession> {
+  const existing = inflightCodeExchanges.get(code);
+  if (existing) {
+    return existing;
+  }
+
+  const exchange = exchangeCodeForSession(code).finally(() => {
+    inflightCodeExchanges.delete(code);
+  });
+  inflightCodeExchanges.set(code, exchange);
+  return exchange;
+}
+
 export async function startStravaLogin(): Promise<AuthSession> {
   const authUrl = buildStravaAuthorizationUrl({
     clientId: STRAVA_CLIENT_ID,
@@ -77,5 +91,5 @@ export async function startStravaLogin(): Promise<AuthSession> {
     throw new Error("Falha ao conectar Strava");
   }
 
-  return exchangeCodeForSession(code);
+  return exchangeOAuthCode(code);
 }

@@ -22,6 +22,7 @@ export type AuthState =
 type AuthContextValue = {
   state: AuthState;
   login: () => Promise<void>;
+  completeOAuthLogin: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   handleUnauthorized: () => Promise<void>;
   completeSync: (session: AuthSession) => void;
@@ -49,6 +50,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: "authenticated", session });
   }, []);
 
+  const handleLoginError = useCallback(
+    async (error: unknown) => {
+      if (error instanceof ApiError && error.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      const message =
+        error instanceof ApiError
+          ? (error.detail ?? "Falha ao conectar Strava")
+          : error instanceof Error && error.message === "OAuth cancelado"
+            ? undefined
+            : error instanceof Error
+              ? error.message
+              : "Falha ao conectar Strava";
+      setState({ status: "unauthenticated", message });
+    },
+    [handleUnauthorized],
+  );
+
+  const completeOAuthLogin = useCallback(
+    async (code: string) => {
+      try {
+        const session = await authService.exchangeOAuthCode(code);
+        setState({ status: "syncing", session });
+      } catch (error) {
+        await handleLoginError(error);
+      }
+    },
+    [handleLoginError],
+  );
+
   useEffect(() => {
     let active = true;
 
@@ -75,31 +107,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session = await authService.startStravaLogin();
       setState({ status: "syncing", session });
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        await handleUnauthorized();
-        return;
-      }
-      const message =
-        error instanceof ApiError
-          ? (error.detail ?? "Falha ao conectar Strava")
-          : error instanceof Error && error.message === "OAuth cancelado"
-            ? undefined
-            : error instanceof Error
-              ? error.message
-              : "Falha ao conectar Strava";
-      setState({ status: "unauthenticated", message });
+      await handleLoginError(error);
     }
-  }, [handleUnauthorized]);
+  }, [handleLoginError]);
 
   const value = useMemo(
     () => ({
       state,
       login,
+      completeOAuthLogin,
       logout,
       handleUnauthorized,
       completeSync,
     }),
-    [state, login, logout, handleUnauthorized, completeSync],
+    [state, login, completeOAuthLogin, logout, handleUnauthorized, completeSync],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -80,3 +80,4 @@ Cobertura mínima de 70% em `src/services/*` e `src/lib/chatMappers.ts`.
 
 - Scheme: `convertreino`
 - Callback OAuth: `convertreino://oauth/callback`
+- Rota interna: `/oauth/callback` — processa o `code` do redirect Strava no build nativo (EAS/dev client) e dispara o sync automático antes de voltar para `/`
