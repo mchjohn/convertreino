@@ -30,7 +30,10 @@ class OpenAILLMClient:
         try:
             response = self._client.chat.completions.create(**request_kwargs)
         except (APIConnectionError, APITimeoutError, APIStatusError) as exc:
-            raise LLMProviderError("LLM provider unavailable") from exc
+            error_message = "LLM provider unavailable"
+            if type(exc).__name__ == "RateLimitError" and "insufficient_quota" in str(exc):
+                error_message = "LLM quota exceeded"
+            raise LLMProviderError(error_message) from exc
 
         choice = response.choices[0]
         raw_tool_calls = choice.message.tool_calls or []

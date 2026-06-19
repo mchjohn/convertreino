@@ -17,6 +17,7 @@ export default function ChatScreen() {
   const { state, handleUnauthorized } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top;
+  const safeAreaBottom = insets.bottom;
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
@@ -50,7 +51,9 @@ export default function ChatScreen() {
         const message =
           error instanceof ApiError
             ? error.status === 502
-              ? "Serviço temporariamente indisponível. Tente novamente."
+              ? error.detail === "LLM quota exceeded"
+                ? "Cota da OpenAI esgotada. Adicione créditos em platform.openai.com."
+                : "Serviço temporariamente indisponível. Tente novamente."
               : error.status === 422
                 ? "Não foi possível enviar a mensagem."
                 : (error.detail ?? error.message)
@@ -68,7 +71,7 @@ export default function ChatScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: safeAreaBottom + 16 }]}>
       {errorBanner ? (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>{errorBanner}</Text>
@@ -81,8 +84,7 @@ export default function ChatScreen() {
         isTyping={isLoading}
         renderAvatar={() => null}
         locale="pt-br"
-        placeholder="Pergunte sobre seus treinos..."
-        disableKeyboardProvider
+        textInputProps={{ placeholder: "Pergunte sobre seus treinos..." }}
         keyboardAvoidingViewProps={{ keyboardVerticalOffset: headerHeight }}
       />
     </View>

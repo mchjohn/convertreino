@@ -27,7 +27,7 @@ def send_chat_message(
     try:
         response = orchestrator.handle(current_user_id, messages)
     except LLMProviderError as exc:
-        raise HTTPException(status_code=502, detail="LLM provider unavailable") from exc
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
     except ChatProcessingError as exc:
         raise HTTPException(status_code=500, detail="Chat processing failed") from exc
 
