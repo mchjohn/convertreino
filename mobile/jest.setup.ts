@@ -19,6 +19,16 @@ jest.mock("expo-linking", () => ({
   parse: jest.fn(),
 }));
 
+jest.mock("react-native-safe-area-context", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return {
+    SafeAreaProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(View, null, children),
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  };
+});
+
 jest.mock("react-native-gifted-chat", () => {
   const React = require("react");
   const { View, Text } = require("react-native");
@@ -26,14 +36,17 @@ jest.mock("react-native-gifted-chat", () => {
     messages,
     onSend,
     isTyping,
+    renderChatEmpty,
   }: {
     messages: unknown[];
     onSend: (m: unknown[]) => void;
     isTyping?: boolean;
+    renderChatEmpty?: () => React.ReactNode;
   }) =>
     React.createElement(
       View,
       { testID: "gifted-chat" },
+      messages.length === 0 && renderChatEmpty ? renderChatEmpty() : null,
       React.createElement(Text, { testID: "message-count" }, String(messages.length)),
       React.createElement(Text, { testID: "is-typing" }, String(Boolean(isTyping))),
       React.createElement(
@@ -46,5 +59,7 @@ jest.mock("react-native-gifted-chat", () => {
       ),
     );
   GiftedChat.append = (current: unknown[] = [], next: unknown[] = []) => [...next, ...current];
-  return { GiftedChat };
+  const Bubble = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, { testID: "bubble" }, children);
+  return { GiftedChat, Bubble };
 });

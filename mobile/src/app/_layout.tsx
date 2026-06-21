@@ -1,9 +1,14 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Slot } from "expo-router";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { AuthProvider } from "@/context/AuthContext";
+import { screenSafePadding } from "@/theme/safeArea";
+import { colors } from "@/theme/tokens";
 
 export default function RootLayout() {
   return (
@@ -22,14 +27,16 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.tertiary,
   },
 });
 
 export function LoadingScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.loading}>
-      <ActivityIndicator size="large" color="#fc4c02" />
+    <View style={[styles.loading, screenSafePadding(insets)]}>
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );
 }

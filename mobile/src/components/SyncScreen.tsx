@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { retrySync, useAuth } from "@/context/AuthContext";
+import { screenSafePadding } from "@/theme/safeArea";
+import {
+  colors,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from "@/theme/tokens";
 
 export function SyncScreen() {
   const { state, handleUnauthorized, completeSync } = useAuth();
+  const insets = useSafeAreaInsets();
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
 
@@ -54,10 +70,10 @@ export function SyncScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, screenSafePadding(insets)]}>
       {!error ? (
         <>
-          <ActivityIndicator size="large" color="#fc4c02" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.title}>Importando atividades...</Text>
         </>
       ) : (
@@ -69,7 +85,11 @@ export function SyncScreen() {
             onPress={() => void handleRetry()}
             disabled={retrying}
           >
-            <Text style={styles.buttonText}>{retrying ? "Tentando..." : "Tentar novamente"}</Text>
+            {retrying ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <Text style={styles.buttonText}>Tentar novamente</Text>
+            )}
           </Pressable>
           <Pressable style={styles.secondaryButton} onPress={handleContinue}>
             <Text style={styles.secondaryButtonText}>Continuar mesmo assim</Text>
@@ -85,40 +105,42 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#ffffff",
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.tertiary,
   },
   title: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
+    ...typography.title,
+    marginTop: spacing.md,
     textAlign: "center",
   },
   message: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#6b7280",
+    ...typography.body,
+    marginTop: spacing.sm,
     textAlign: "center",
   },
   button: {
-    marginTop: 24,
-    backgroundColor: "#fc4c02",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.button,
+    minHeight: touchTarget.minHeight,
+    minWidth: touchTarget.minWidth,
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
-    color: "#ffffff",
-    fontWeight: "600",
+    ...typography.label,
   },
   secondaryButton: {
-    marginTop: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    marginTop: spacing.sm + spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    minHeight: touchTarget.minHeight,
+    justifyContent: "center",
   },
   secondaryButtonText: {
-    color: "#374151",
+    ...typography.bodyStrong,
     fontWeight: "500",
   },
 });

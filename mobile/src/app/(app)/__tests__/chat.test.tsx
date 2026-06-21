@@ -4,16 +4,6 @@ jest.mock("@/context/AuthContext", () => ({
   useAuth: jest.fn(),
 }));
 
-jest.mock("react-native-safe-area-context", () => {
-  const React = require("react");
-  const { View } = require("react-native");
-  return {
-    SafeAreaProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(View, null, children),
-    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-  };
-});
-
 import ChatScreen from "@/app/(app)/chat";
 import { useAuth } from "@/context/AuthContext";
 
@@ -46,6 +36,14 @@ describe("ChatScreen", () => {
   it("CN-4: renderiza GiftedChat autenticado", () => {
     const { getByTestId } = renderChat();
     expect(getByTestId("gifted-chat")).toBeTruthy();
+  });
+
+  it("CN-UI-2: exibe empty state quando sem mensagens", () => {
+    const { getByText } = renderChat();
+    expect(getByText("Pergunte sobre seus treinos")).toBeTruthy();
+    expect(getByText("Experimente:")).toBeTruthy();
+    expect(getByText("• Qual foi minha corrida mais longa?")).toBeTruthy();
+    expect(getByText("• Quanto corri esta semana?")).toBeTruthy();
   });
 
   it("CN-4: isTyping durante request", async () => {
