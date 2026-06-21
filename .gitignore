@@ -2,6 +2,9 @@
 .venv
 __pycache__
 backend/.env
+backend/.coverage
+backend/.env.*
+!backend/.env.example
 
 # Mobile
 mobile/node_modules
@@ -10,3 +13,5 @@ mobile/.env
 mobile/.expo
 mobile/ios
 mobile/android
+mobile/.env.*
+!mobile/.env.example
