@@ -35,6 +35,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
+    // GiftedChat usa FlatList invertida; reverte o espelhamento do empty state.
+    transform: [{ scaleY: -1 }, { scaleX: -1 }],
   },
   title: {
     ...typography.title,

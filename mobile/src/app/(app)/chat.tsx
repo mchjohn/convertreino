@@ -100,6 +100,7 @@ export default function ChatScreen() {
         renderTime={() => null}
         renderChatEmpty={() => <ChatEmptyState />}
         messagesContainerStyle={styles.messagesContainer}
+        listProps={{ contentContainerStyle: styles.listContent }}
         textInputProps={{
           placeholder: "Pergunte sobre seus treinos...",
           placeholderTextColor: colors.muted,
@@ -151,6 +152,9 @@ const styles = StyleSheet.create({
   messagesContainer: {
     backgroundColor: colors.tertiary,
     paddingTop: spacing.sm,
+  },
+  listContent: {
+    flexGrow: 1,
   },
   textInput: {
     backgroundColor: colors.inputBackground,
