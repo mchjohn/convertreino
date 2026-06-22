@@ -1,5 +1,5 @@
 import inspect
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -8,6 +8,8 @@ from convertreino.application.chat_orchestrator import (
     DEFAULT_SYSTEM_PROMPT,
     ChatOrchestrator,
     ChatResponse,
+    _build_system_prompt,
+    _utc_week_bounds,
 )
 from convertreino.application.chat_tools import ChatToolRegistry
 from convertreino.application.llm.fake_client import FakeLLMClient
@@ -36,7 +38,7 @@ def _orchestrator(
 
 
 def test_chat_orchestrator_handle_signature_matches_contract():
-  # Arrange / Act
+    # Arrange / Act
     signature = inspect.signature(ChatOrchestrator.handle)
 
     # Assert
@@ -44,8 +46,23 @@ def test_chat_orchestrator_handle_signature_matches_contract():
     assert signature.return_annotation is ChatResponse
 
 
+def test_build_system_prompt_includes_utc_week_references():
+    # Arrange
+    now = datetime(2026, 6, 21, 15, 30, tzinfo=UTC)
+
+    # Act
+    prompt = _build_system_prompt(DEFAULT_SYSTEM_PROMPT, now)
+
+    # Assert
+    this_start, this_end = _utc_week_bounds(now)
+    last_start, last_end = _utc_week_bounds(this_start - timedelta(seconds=1))
+    assert this_start.isoformat() in prompt
+    assert this_end.isoformat() in prompt
+    assert last_start.isoformat() in prompt
+    assert last_end.isoformat() in prompt
+
+
 def test_cn1_question_about_pr_triggers_get_longest_run():
-    # Arrange — CN-1
     llm = FakeLLMClient(
         [
             LLMCompletion(
@@ -160,7 +177,11 @@ def test_cn4_multi_turn_preserves_full_history_for_llm():
 
     # Assert
     sent_messages = llm.complete_calls[0][0]
-    assert sent_messages[0] == ChatMessage(role="system", content=DEFAULT_SYSTEM_PROMPT)
+    assert sent_messages[0].role == "system"
+    assert sent_messages[0].content.startswith(DEFAULT_SYSTEM_PROMPT)
+    assert "A data e hora atuais em UTC são:" in sent_messages[0].content
+    assert "'essa semana' =" in sent_messages[0].content
+    assert "'semana passada' =" in sent_messages[0].content
     assert sent_messages[1:] == history
 
 

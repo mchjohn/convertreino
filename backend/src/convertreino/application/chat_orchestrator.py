@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from convertreino.application.chat_tools import ChatToolRegistry
@@ -26,6 +27,26 @@ class ChatResponse:
     tool_calls_made: tuple[str, ...]
 
 
+def _utc_week_bounds(reference: datetime) -> tuple[datetime, datetime]:
+    monday = reference.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    monday -= timedelta(days=monday.weekday())
+    sunday_end = monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    return monday, sunday_end
+
+
+def _build_system_prompt(base: str, now_utc: datetime) -> str:
+    this_start, this_end = _utc_week_bounds(now_utc)
+    last_start, last_end = _utc_week_bounds(this_start - timedelta(seconds=1))
+    return (
+        f"{base} "
+        f"A data e hora atuais em UTC são: {now_utc.isoformat()}. "
+        "A semana civil em UTC começa na segunda-feira 00:00 e termina no domingo 23:59:59. "
+        "Use essa data como referência para períodos relativos. "
+        f"Referência: 'essa semana' = {this_start.isoformat()} a {this_end.isoformat()}; "
+        f"'semana passada' = {last_start.isoformat()} a {last_end.isoformat()}."
+    )
+
+
 class ChatOrchestrator:
     def __init__(
         self,
@@ -42,7 +63,10 @@ class ChatOrchestrator:
 
     def handle(self, user_id: UUID, messages: list[ChatMessage]) -> ChatResponse:
         conversation: list[ChatMessage] = [
-            ChatMessage(role="system", content=self._system_prompt),
+            ChatMessage(
+                role="system",
+                content=_build_system_prompt(self._system_prompt, datetime.now(UTC)),
+            ),
             *messages,
         ]
         tool_calls_made: list[str] = []
