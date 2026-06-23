@@ -1,6 +1,6 @@
 # ConverTreino Backend
 
-Fundação do backend (SPEC-001), OAuth Strava (SPEC-002) e autenticação JWT (SPEC-013).
+Fundação do backend (SPEC-001), OAuth Strava (SPEC-002), JWT (SPEC-013), chat LLM (SPEC-014/017/020) e debug Phoenix (SPEC-019).
 
 ## Requisitos
 
@@ -94,11 +94,14 @@ curl -X POST "http://localhost:8000/auth/strava/token" \
   -d '{"code":"<authorization_code>"}'
 ```
 
-### Chat (SPEC-014 / SPEC-017)
+### Chat (SPEC-014 / SPEC-017 / SPEC-020)
 
-Perguntas em linguagem natural sobre treinos (requer JWT e chave do provider LLM ativo):
+Perguntas em linguagem natural sobre treinos (requer JWT e chave do provider LLM ativo).
+
+As definições de tools enviadas ao LLM usam schemas compactos em `application/llm/chat_tool_schemas.py` (SPEC-020). O servidor MCP (`/mcp`) continua com descrições verbosas — contratos distintos para o mesmo handler analítico.
 
 ```bash
+
 # OpenAI (default)
 export LLM_PROVIDER=openai
 export OPENAI_API_KEY=sk-...
