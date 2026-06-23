@@ -478,6 +478,7 @@ Padrão de override: `set_chat_orchestrator_override` em `dependencies.py`, espe
 - Endpoint novo; sem breaking change em contratos existentes
 - `/mcp` HTTP permanece inalterado (com `user_id` no schema)
 - Rollback: remover pacote `application/llm/`, `chat_orchestrator.py`, `chat_tools.py`, rota chat, config OpenAI, dependência `openai` — sem impacto em dados
+- A decisão "Descrições de tools reutilizam constantes MCP sem duplicar texto" foi **superseded parcialmente** pela SPEC-020: o chat passa a usar descrições compactas dedicadas (`CHAT_*_DESCRIPTION`); MCP mantém descrições verbosas (`GET_*_DESCRIPTION`).
 
 ---
 

@@ -10,8 +10,14 @@ from convertreino.domain.services.volume_engine import VolumeEngine
 from convertreino.infrastructure.repositories.in_memory_activity_repository import (
     InMemoryActivityRepository,
 )
-from convertreino.mcp.tools.pr import GET_LONGEST_RUN_DESCRIPTION
-from convertreino.mcp.tools.volume import GET_RUN_VOLUME_DESCRIPTION
+from convertreino.application.llm.chat_tool_schemas import (
+    CHAT_GET_LONGEST_RIDE_DESCRIPTION,
+    CHAT_GET_LONGEST_RUN_DESCRIPTION,
+    CHAT_GET_RIDE_VOLUME_DESCRIPTION,
+    CHAT_GET_RUN_VOLUME_DESCRIPTION,
+)
+from convertreino.mcp.tools.pr import GET_LONGEST_RIDE_DESCRIPTION, GET_LONGEST_RUN_DESCRIPTION
+from convertreino.mcp.tools.volume import GET_RIDE_VOLUME_DESCRIPTION, GET_RUN_VOLUME_DESCRIPTION
 from tests.builders import build_activity
 
 USER_ID = UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -40,7 +46,7 @@ def test_tool_definitions_do_not_include_user_id():
         assert definition.parameters.get("additionalProperties") is False
 
 
-def test_tool_definitions_reuse_mcp_descriptions():
+def test_tool_definitions_use_compact_chat_descriptions():
     # Arrange
     registry = ChatToolRegistry(InMemoryActivityRepository([]))
 
@@ -48,8 +54,14 @@ def test_tool_definitions_reuse_mcp_descriptions():
     definitions = {tool.name: tool.description for tool in registry.get_tool_definitions()}
 
     # Assert
-    assert definitions["get_longest_run"] == GET_LONGEST_RUN_DESCRIPTION
-    assert definitions["get_run_volume"] == GET_RUN_VOLUME_DESCRIPTION
+    assert definitions["get_longest_run"] == CHAT_GET_LONGEST_RUN_DESCRIPTION
+    assert definitions["get_longest_run"] != GET_LONGEST_RUN_DESCRIPTION
+    assert definitions["get_longest_ride"] == CHAT_GET_LONGEST_RIDE_DESCRIPTION
+    assert definitions["get_longest_ride"] != GET_LONGEST_RIDE_DESCRIPTION
+    assert definitions["get_run_volume"] == CHAT_GET_RUN_VOLUME_DESCRIPTION
+    assert definitions["get_run_volume"] != GET_RUN_VOLUME_DESCRIPTION
+    assert definitions["get_ride_volume"] == CHAT_GET_RIDE_VOLUME_DESCRIPTION
+    assert definitions["get_ride_volume"] != GET_RIDE_VOLUME_DESCRIPTION
 
 
 def test_execute_get_longest_run_uses_injected_user_id():

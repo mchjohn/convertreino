@@ -1,46 +1,14 @@
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
+from convertreino.application.llm.chat_tool_schemas import get_chat_tool_definitions
 from convertreino.application.llm.types import ToolDefinition
 from convertreino.domain.repositories.activity_repository import ActivityRepository
 from convertreino.domain.services.pr_engine import PREngine
 from convertreino.domain.services.volume_engine import VolumeEngine
 from convertreino.infrastructure.tracing import set_span_attribute, start_span, truncate_attr
-from convertreino.mcp.tools.pr import (
-    GET_LONGEST_RIDE_DESCRIPTION,
-    GET_LONGEST_RUN_DESCRIPTION,
-    get_longest_ride,
-    get_longest_run,
-)
-from convertreino.mcp.tools.volume import (
-    GET_RIDE_VOLUME_DESCRIPTION,
-    GET_RUN_VOLUME_DESCRIPTION,
-    get_ride_volume,
-    get_run_volume,
-)
-
-_DATE_PARAMS_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "start_date": {
-            "type": "string",
-            "description": "Data inicial em ISO 8601 UTC",
-        },
-        "end_date": {
-            "type": "string",
-            "description": "Data final em ISO 8601 UTC",
-        },
-    },
-    "additionalProperties": False,
-}
-
-_TOOL_DEFINITIONS: tuple[tuple[str, str], ...] = (
-    ("get_longest_run", GET_LONGEST_RUN_DESCRIPTION),
-    ("get_longest_ride", GET_LONGEST_RIDE_DESCRIPTION),
-    ("get_run_volume", GET_RUN_VOLUME_DESCRIPTION),
-    ("get_ride_volume", GET_RIDE_VOLUME_DESCRIPTION),
-)
+from convertreino.mcp.tools.pr import get_longest_ride, get_longest_run
+from convertreino.mcp.tools.volume import get_ride_volume, get_run_volume
 
 
 class ChatToolRegistry:
@@ -50,14 +18,7 @@ class ChatToolRegistry:
         self._volume_engine = VolumeEngine(activity_repo)
 
     def get_tool_definitions(self) -> list[ToolDefinition]:
-        return [
-            ToolDefinition(
-                name=name,
-                description=description,
-                parameters=_DATE_PARAMS_SCHEMA,
-            )
-            for name, description in _TOOL_DEFINITIONS
-        ]
+        return get_chat_tool_definitions()
 
     def execute(
         self,
