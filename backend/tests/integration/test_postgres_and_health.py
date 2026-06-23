@@ -50,8 +50,8 @@ def db_session() -> Generator[Session, None, None]:
     session = session_factory()
     try:
         yield session
-        session.commit()
     finally:
+        session.rollback()
         session.close()
         Base.metadata.drop_all(engine)
         engine.dispose()

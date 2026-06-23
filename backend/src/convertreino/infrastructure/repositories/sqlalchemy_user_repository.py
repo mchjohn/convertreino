@@ -66,6 +66,7 @@ class SqlAlchemyUserRepository(UserRepository):
         try:
             self._session.flush()
         except IntegrityError as exc:
+            self._session.rollback()
             raise DomainIntegrityError(
                 f"strava_athlete_id {user.strava_athlete_id} violates uniqueness constraint"
             ) from exc

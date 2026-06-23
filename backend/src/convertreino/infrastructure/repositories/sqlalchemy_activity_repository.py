@@ -48,6 +48,7 @@ class SqlAlchemyActivityRepository(ActivityRepository):
         try:
             self._session.flush()
         except IntegrityError as exc:
+            self._session.rollback()
             raise DomainIntegrityError(
                 f"Cannot save activity for unknown user_id: {activity.user_id}"
             ) from exc
@@ -80,6 +81,7 @@ class SqlAlchemyActivityRepository(ActivityRepository):
             try:
                 self._session.flush()
             except IntegrityError as exc:
+                self._session.rollback()
                 raise DomainIntegrityError(
                     f"Cannot upsert activity for user_id: {activity.user_id}"
                 ) from exc
