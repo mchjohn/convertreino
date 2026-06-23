@@ -3,10 +3,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from opentelemetry.trace import Span
+
 from convertreino.application.chat_tools import ChatToolRegistry
 from convertreino.application.llm.client import LLMClient
 from convertreino.application.llm.types import ChatMessage
 from convertreino.domain.exceptions import ChatProcessingError
+from convertreino.infrastructure.tracing import set_span_attribute, start_span
 
 DEFAULT_SYSTEM_PROMPT = (
     "Você é o ConverTreino, assistente de performance esportiva para atletas com dados do Strava. "
@@ -62,6 +65,18 @@ class ChatOrchestrator:
         self._system_prompt = system_prompt
 
     def handle(self, user_id: UUID, messages: list[ChatMessage]) -> ChatResponse:
+        with start_span(
+            "chat.orchestrator.handle",
+            **{"chat.max_tool_iterations": self._max_tool_iterations},
+        ) as orchestrator_span:
+            return self._handle(user_id, messages, orchestrator_span)
+
+    def _handle(
+        self,
+        user_id: UUID,
+        messages: list[ChatMessage],
+        orchestrator_span: Span,
+    ) -> ChatResponse:
         conversation: list[ChatMessage] = [
             ChatMessage(
                 role="system",
@@ -110,6 +125,8 @@ class ChatOrchestrator:
                 continue
 
             if completion.message is not None and completion.message.role == "assistant":
+                set_span_attribute(orchestrator_span, "chat.iterations", iterations)
+                set_span_attribute(orchestrator_span, "chat.tool_calls_made", tool_calls_made)
                 return ChatResponse(
                     message=completion.message,
                     tool_calls_made=tuple(tool_calls_made),

@@ -89,6 +89,34 @@ def get_chat_settings() -> ChatSettings:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class PhoenixSettings:
+    enabled: bool
+    collector_endpoint: str
+    project_name: str
+
+
+def _parse_bool_env(name: str, *, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def get_phoenix_settings() -> PhoenixSettings:
+    enabled = _parse_bool_env("PHOENIX_ENABLED", default=False)
+    if _is_test_runtime():
+        enabled = False
+    return PhoenixSettings(
+        enabled=enabled,
+        collector_endpoint=os.environ.get(
+            "PHOENIX_COLLECTOR_ENDPOINT",
+            "http://localhost:6006/v1/traces",
+        ),
+        project_name=os.environ.get("PHOENIX_PROJECT_NAME", "convertreino-dev"),
+    )
+
+
 def build_authorization_url(
     *,
     client_id: str,

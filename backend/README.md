@@ -37,6 +37,9 @@ O arquivo `backend/.env` é carregado automaticamente ao iniciar a API, rodar mi
 | `GROQ_API_KEY` | Sim* (provider=groq) | `test-groq-key` | Chave da API Groq Cloud |
 | `GROQ_MODEL` | Não | `llama-3.3-70b-versatile` | Modelo Groq com suporte a tool calling |
 | `CHAT_MAX_TOOL_ITERATIONS` | Não | `5` | Máximo de rodadas LLM↔tools por request de chat |
+| `PHOENIX_ENABLED` | Não | `false` | Exporta traces LLM para Phoenix (somente dev local) |
+| `PHOENIX_COLLECTOR_ENDPOINT` | Não | `http://localhost:6006/v1/traces` | Endpoint OTLP HTTP do Phoenix |
+| `PHOENIX_PROJECT_NAME` | Não | `convertreino-dev` | Nome do projeto no UI Phoenix |
 | `STRAVA_CLIENT_ID` | Sim (OAuth) | — | Client ID da app Strava |
 | `STRAVA_CLIENT_SECRET` | Sim (OAuth) | — | Client secret Strava |
 | `STRAVA_REDIRECT_URI` | Sim (OAuth) | — | Redirect URI registrado no Strava |
@@ -105,7 +108,6 @@ export OPENAI_API_KEY=sk-...
 # export GROQ_API_KEY=gsk_...
 # export GROQ_MODEL=llama-3.3-70b-versatile
 
-```bash
 curl -X POST "http://localhost:8000/chat/messages" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
@@ -123,6 +125,43 @@ Resposta esperada (`200`):
   "tool_calls_made": ["get_longest_run"]
 }
 ```
+
+### Debug com Phoenix (SPEC-019)
+
+Observabilidade LLM opcional para inspecionar prompts, completions e execução de tools no fluxo de chat.
+
+1. Suba o Phoenix com o profile `observability`:
+
+```bash
+cd backend
+docker compose --profile observability up -d
+```
+
+2. Instale as dependências de observabilidade:
+
+```bash
+uv sync --extra observability --dev
+```
+
+3. Habilite no `.env`:
+
+```env
+PHOENIX_ENABLED=true
+# PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006/v1/traces
+# PHOENIX_PROJECT_NAME=convertreino-dev
+```
+
+4. Inicie a API e envie mensagens de chat (mobile ou curl acima).
+
+5. Abra o UI em [http://localhost:6006](http://localhost:6006) e inspecione os traces.
+
+Smoke test manual sugerido:
+
+1. "Qual foi minha corrida mais longa?" — deve aparecer span de tool `get_longest_run`
+2. "Quanto corri essa semana?" — span de tool de volume
+3. "Olá!" — apenas spans LLM, sem tool
+
+**Nota:** Phoenix é somente para desenvolvimento local. Não habilite `PHOENIX_ENABLED` em produção.
 
 ## Testes
 

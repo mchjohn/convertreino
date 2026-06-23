@@ -6,6 +6,7 @@ from convertreino.application.llm.types import ToolDefinition
 from convertreino.domain.repositories.activity_repository import ActivityRepository
 from convertreino.domain.services.pr_engine import PREngine
 from convertreino.domain.services.volume_engine import VolumeEngine
+from convertreino.infrastructure.tracing import set_span_attribute, start_span, truncate_attr
 from convertreino.mcp.tools.pr import (
     GET_LONGEST_RIDE_DESCRIPTION,
     GET_LONGEST_RUN_DESCRIPTION,
@@ -59,6 +60,23 @@ class ChatToolRegistry:
         ]
 
     def execute(
+        self,
+        user_id: UUID,
+        tool_name: str,
+        arguments: dict[str, object],
+    ) -> dict[str, object]:
+        with start_span(
+            "chat.tool.execute",
+            **{
+                "tool.name": tool_name,
+                "tool.arguments": truncate_attr(arguments),
+            },
+        ) as tool_span:
+            result = self._execute_tool(user_id, tool_name, arguments)
+            set_span_attribute(tool_span, "tool.result", truncate_attr(result))
+            return result
+
+    def _execute_tool(
         self,
         user_id: UUID,
         tool_name: str,

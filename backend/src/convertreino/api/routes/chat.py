@@ -11,6 +11,7 @@ from convertreino.api.schemas.chat import (
 from convertreino.application.chat_orchestrator import ChatOrchestrator
 from convertreino.application.llm.types import ChatMessage
 from convertreino.domain.exceptions import ChatProcessingError, LLMProviderError
+from convertreino.infrastructure.tracing import set_span_attribute, start_span
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -24,12 +25,21 @@ def send_chat_message(
     messages = [
         ChatMessage(role=message.role, content=message.content) for message in body.messages
     ]
-    try:
-        response = orchestrator.handle(current_user_id, messages)
-    except LLMProviderError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except ChatProcessingError as exc:
-        raise HTTPException(status_code=500, detail="Chat processing failed") from exc
+    with start_span(
+        "chat.request",
+        **{
+            "chat.user_id": str(current_user_id),
+            "chat.message_count": len(messages),
+        },
+    ) as request_span:
+        try:
+            response = orchestrator.handle(current_user_id, messages)
+        except LLMProviderError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        except ChatProcessingError as exc:
+            raise HTTPException(status_code=500, detail="Chat processing failed") from exc
+
+        set_span_attribute(request_span, "chat.tool_calls_made", list(response.tool_calls_made))
 
     return ChatResponseSchema(
         message=AssistantMessageResponse(content=response.message.content),
