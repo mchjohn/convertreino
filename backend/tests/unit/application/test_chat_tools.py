@@ -5,16 +5,16 @@ from uuid import UUID, uuid4
 import pytest
 
 from convertreino.application.chat_tools import ChatToolRegistry
-from convertreino.domain.services.pr_engine import PREngine
-from convertreino.domain.services.volume_engine import VolumeEngine
-from convertreino.infrastructure.repositories.in_memory_activity_repository import (
-    InMemoryActivityRepository,
-)
 from convertreino.application.llm.chat_tool_schemas import (
     CHAT_GET_LONGEST_RIDE_DESCRIPTION,
     CHAT_GET_LONGEST_RUN_DESCRIPTION,
     CHAT_GET_RIDE_VOLUME_DESCRIPTION,
     CHAT_GET_RUN_VOLUME_DESCRIPTION,
+)
+from convertreino.domain.services.pr_engine import PREngine
+from convertreino.domain.services.volume_engine import VolumeEngine
+from convertreino.infrastructure.repositories.in_memory_activity_repository import (
+    InMemoryActivityRepository,
 )
 from convertreino.mcp.tools.pr import GET_LONGEST_RIDE_DESCRIPTION, GET_LONGEST_RUN_DESCRIPTION
 from convertreino.mcp.tools.volume import GET_RIDE_VOLUME_DESCRIPTION, GET_RUN_VOLUME_DESCRIPTION

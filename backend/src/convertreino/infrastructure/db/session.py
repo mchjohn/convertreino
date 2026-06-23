@@ -1,10 +1,10 @@
-import convertreino.infrastructure.load_env  # noqa: F401
-
 import os
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+import convertreino.infrastructure.load_env  # noqa: F401
 
 DEFAULT_DATABASE_URL = (
     "postgresql+psycopg://convertreino:convertreino@localhost:5432/convertreino"

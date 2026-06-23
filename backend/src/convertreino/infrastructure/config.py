@@ -1,10 +1,9 @@
-import convertreino.infrastructure.load_env  # noqa: F401
-
 import os
 import sys
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
+import convertreino.infrastructure.load_env  # noqa: F401
 from convertreino.application.jwt_token_service import JwtSettings
 
 

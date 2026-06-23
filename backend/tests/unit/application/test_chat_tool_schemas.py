@@ -53,7 +53,8 @@ def test_chat_descriptions_preserve_sport_type_and_record_vs_volume():
 
     # Assert
     assert "Run" in definitions["get_longest_run"]
-    assert "recorde" in definitions["get_longest_run"].lower() or "maior distância" in definitions["get_longest_run"]
+    longest_run_desc = definitions["get_longest_run"]
+    assert "recorde" in longest_run_desc.lower() or "maior distância" in longest_run_desc
     assert "Ride" in definitions["get_longest_ride"]
     assert "Run" in definitions["get_run_volume"]
     assert "volume agregado" in definitions["get_run_volume"].lower()

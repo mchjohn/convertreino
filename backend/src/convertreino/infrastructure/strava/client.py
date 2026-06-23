@@ -27,7 +27,9 @@ class StravaActivitySummary:
 
 
 class StravaApiClient(Protocol):
-    def exchange_code(self, code: str, *, redirect_uri: str | None = None) -> StravaTokenResponse: ...
+    def exchange_code(
+        self, code: str, *, redirect_uri: str | None = None
+    ) -> StravaTokenResponse: ...
 
     def refresh_token(self, refresh_token: str) -> StravaTokenResponse: ...
 
