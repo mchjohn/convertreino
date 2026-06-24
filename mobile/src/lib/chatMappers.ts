@@ -53,7 +53,9 @@ function giftedRole(message: IMessage): ChatMessage["role"] | null {
 }
 
 export function toApiMessages(gifted: IMessage[]): ChatMessage[] {
-  return gifted
+  // GiftedChat mantém mensagens da mais nova para a mais antiga; a API espera cronológica.
+  const chronological = [...gifted].reverse();
+  return chronological
     .map((message) => {
       const role = giftedRole(message);
       if (role === null) {

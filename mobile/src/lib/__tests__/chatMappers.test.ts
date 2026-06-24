@@ -33,8 +33,22 @@ describe("chatMappers", () => {
     ]);
 
     expect(apiMessages).toEqual([
-      { role: "user", content: "válida" },
       { role: "assistant", content: "resposta" },
+      { role: "user", content: "válida" },
+    ]);
+  });
+
+  it("toApiMessages envia histórico em ordem cronológica (mais antiga primeiro)", () => {
+    const apiMessages = toApiMessages([
+      createUserGiftedMessage("Quanto pedalei semana passada?"),
+      createAssistantGiftedMessage("Você pedaleou 10 km essa semana."),
+      createUserGiftedMessage("Quanto pedalei essa semana?"),
+    ]);
+
+    expect(apiMessages).toEqual([
+      { role: "user", content: "Quanto pedalei essa semana?" },
+      { role: "assistant", content: "Você pedaleou 10 km essa semana." },
+      { role: "user", content: "Quanto pedalei semana passada?" },
     ]);
   });
 
