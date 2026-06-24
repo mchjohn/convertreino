@@ -1,10 +1,13 @@
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
+import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import "dayjs/locale/pt-br";
 
+import { ChatBubble } from "@/components/chat/ChatBubble";
 import { ChatEmptyState } from "@/components/chat/ChatEmptyState";
+import { ChatInputToolbar } from "@/components/chat/ChatInputToolbar";
 import { useAuth } from "@/context/AuthContext";
 import {
   createAssistantGiftedMessage,
@@ -13,12 +16,12 @@ import {
 import { ApiError } from "@/services/apiClient";
 import { sendChatMessage } from "@/services/chatService";
 import { giftedChatUsers } from "@/types/giftedChat";
-import { colors, radius, spacing, typography } from "@/theme/tokens";
+import { chatColors, spacing, typography } from "@/theme/tokens";
 
 export default function ChatScreen() {
   const { state, handleUnauthorized } = useAuth();
   const insets = useSafeAreaInsets();
-  const keyboardVerticalOffset = insets.top + spacing.md;
+  const keyboardVerticalOffset = insets.top;
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
@@ -79,11 +82,12 @@ export default function ChatScreen() {
       style={[
         styles.container,
         {
-          paddingTop: insets.top + spacing.md,
-          paddingBottom: insets.bottom + spacing.md,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
         },
       ]}
     >
+      <StatusBar style="light" />
       {errorBanner ? (
         <View accessibilityRole="alert" style={styles.banner}>
           <Text style={styles.bannerText}>{errorBanner}</Text>
@@ -95,38 +99,14 @@ export default function ChatScreen() {
         user={giftedChatUsers.user}
         isTyping={isLoading}
         locale="pt-br"
-        isSendButtonAlwaysVisible={false}
+        isSendButtonAlwaysVisible
         renderAvatar={() => null}
         renderTime={() => null}
         renderChatEmpty={() => <ChatEmptyState />}
+        renderBubble={(props) => <ChatBubble {...props} />}
+        renderInputToolbar={(props) => <ChatInputToolbar {...props} />}
         messagesContainerStyle={styles.messagesContainer}
         listProps={{ contentContainerStyle: styles.listContent }}
-        textInputProps={{
-          placeholder: "Pergunte sobre seus treinos...",
-          placeholderTextColor: colors.muted,
-          style: styles.textInput,
-        }}
-        renderBubble={(props) => (
-          <Bubble
-            {...props}
-            wrapperStyle={{
-              right: {
-                backgroundColor: colors.primary,
-                borderRadius: radius.bubble,
-              },
-              left: {
-                backgroundColor: colors.tertiary,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.bubble,
-              },
-            }}
-            textStyle={{
-              right: { color: colors.onPrimary },
-              left: { color: colors.secondary },
-            }}
-          />
-        )}
         keyboardAvoidingViewProps={{ keyboardVerticalOffset }}
       />
     </View>
@@ -136,33 +116,26 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.tertiary,
+    backgroundColor: chatColors.background,
   },
   banner: {
-    backgroundColor: colors.errorSurface,
-    borderBottomColor: colors.errorBorder,
+    backgroundColor: chatColors.errorSurface,
+    borderBottomColor: chatColors.errorBorder,
     borderBottomWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
   bannerText: {
-    ...typography.captionError,
+    ...typography.caption,
+    color: chatColors.errorText,
     textAlign: "center",
   },
   messagesContainer: {
-    backgroundColor: colors.tertiary,
+    backgroundColor: chatColors.background,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
   listContent: {
     flexGrow: 1,
-  },
-  textInput: {
-    backgroundColor: colors.inputBackground,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.input,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: colors.secondary,
   },
 });

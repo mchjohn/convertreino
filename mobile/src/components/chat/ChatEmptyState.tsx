@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, spacing, typography } from "@/theme/tokens";
+import { chatColors, spacing, typography } from "@/theme/tokens";
 
 const DEFAULT_EXAMPLES = [
   "Qual foi minha corrida mais longa?",
@@ -40,15 +40,18 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title,
+    color: chatColors.text,
     textAlign: "center",
   },
   hint: {
     ...typography.caption,
+    color: chatColors.placeholder,
     marginTop: spacing.md,
     textAlign: "center",
   },
   example: {
     ...typography.body,
+    color: chatColors.placeholder,
     textAlign: "center",
     marginTop: spacing.xs,
   },

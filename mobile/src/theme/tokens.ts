@@ -23,6 +23,20 @@ export const radius = {
   button: 8,
   input: 8,
   bubble: 16,
+  chatUserBubble: 24,
+  chatAssistantBubble: 18,
+  chatInput: 28,
+} as const;
+
+export const chatColors = {
+  background: "#000000",
+  surface: "#1C1C1E",
+  border: "#333333",
+  text: "#FFFFFF",
+  placeholder: "#8E8E93",
+  errorSurface: "#2C1515",
+  errorBorder: "#7F1D1D",
+  errorText: "#FCA5A5",
 } as const;
 
 export const typography = {
