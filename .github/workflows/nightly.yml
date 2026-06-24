@@ -1,17 +1,21 @@
-name: CI
+name: Nightly
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 defaults:
   run:
     working-directory: backend
 
 jobs:
-  lint-and-test:
+  chat-accuracy:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [openai, groq]
 
     services:
       postgres:
@@ -29,14 +33,31 @@ jobs:
           --health-retries 10
 
     env:
+      E2E_LLM: "1"
+      LLM_PROVIDER: ${{ matrix.provider }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      OPENAI_MODEL: gpt-4o-mini
+      GROQ_MODEL: llama-3.3-70b-versatile
+      JWT_SECRET: test-jwt-secret-for-nightly
       TEST_DATABASE_URL: postgresql+psycopg://convertreino:convertreino@localhost:5432/convertreino_test
       STRAVA_CLIENT_ID: fake-client-id
       STRAVA_CLIENT_SECRET: fake-client-secret
       STRAVA_REDIRECT_URI: http://localhost:8000/auth/strava/callback
-      JWT_SECRET: test-jwt-secret-for-ci
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify API key secret
+        run: |
+          if [ "${{ matrix.provider }}" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY secret is required for nightly chat accuracy (openai)"
+            exit 1
+          fi
+          if [ "${{ matrix.provider }}" = "groq" ] && [ -z "$GROQ_API_KEY" ]; then
+            echo "::error::GROQ_API_KEY secret is required for nightly chat accuracy (groq)"
+            exit 1
+          fi
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -49,20 +70,5 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Ruff
-        run: uv run ruff check src tests
-
-      - name: Mypy
-        run: uv run mypy src
-
-      - name: Pytest
-        run: |
-          uv run pytest -m "not e2e" --cov=convertreino.domain --cov=convertreino.mcp --cov=convertreino.application --cov-report=term-missing
-          uv run coverage report --include='*/convertreino/domain/*' --fail-under=95
-          uv run coverage report --include='*/convertreino/mcp/*' --fail-under=90
-          uv run coverage report --include='*/convertreino/application/*' --fail-under=80
-
-      - name: Alembic upgrade
-        env:
-          DATABASE_URL: postgresql+psycopg://convertreino:convertreino@localhost:5432/convertreino_test
-        run: uv run alembic upgrade head
+      - name: Chat intent accuracy E2E
+        run: uv run pytest -m e2e --tb=short -v

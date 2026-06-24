@@ -1,0 +1,51 @@
+version: 1
+seed:
+  user_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+  activities:
+    - activity_type: Run
+      distance_meters: 21097
+      start_date: "2024-06-01T08:00:00Z"
+    - activity_type: Ride
+      distance_meters: 85000
+      start_date: "2024-06-02T09:00:00Z"
+cases:
+  - id: intent_longest_run
+    question: "Qual foi minha corrida mais longa?"
+    expected_tools: ["get_longest_run"]
+    boundary: record_run
+  - id: intent_longest_run_vs_volume
+    question: "Qual a maior distância que já corri?"
+    expected_tools: ["get_longest_run"]
+    boundary: record_vs_volume
+  - id: intent_run_volume_this_week
+    question: "Quanto corri essa semana?"
+    expected_tools: ["get_run_volume"]
+    boundary: volume_run_relative_period
+  - id: intent_run_volume_year
+    question: "Quanto corri em 2024?"
+    expected_tools: ["get_run_volume"]
+    boundary: volume_vs_record
+  - id: intent_longest_ride
+    question: "Qual foi meu pedal mais longo?"
+    expected_tools: ["get_longest_ride"]
+    boundary: record_ride
+  - id: intent_ride_volume_year
+    question: "Quantos km pedalei em 2024?"
+    expected_tools: ["get_ride_volume"]
+    boundary: volume_ride
+  - id: intent_ride_volume_this_week
+    question: "Quanto pedalei essa semana?"
+    expected_tools: ["get_ride_volume"]
+    boundary: run_vs_ride
+  - id: intent_longest_run_with_period
+    question: "Qual foi minha corrida mais longa em 2024?"
+    expected_tools: ["get_longest_run"]
+    boundary: record_with_temporal_filter
+  - id: intent_run_volume_count
+    question: "Quantas corridas fiz neste mês?"
+    expected_tools: ["get_run_volume"]
+    boundary: aggregate_count
+  - id: intent_greeting
+    question: "Olá!"
+    expected_tools: []
+    boundary: no_tool

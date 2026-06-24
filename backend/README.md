@@ -172,13 +172,38 @@ Smoke test manual sugerido:
 # Unitários + contrato (sem banco)
 uv run pytest -m "not integration"
 
-# Todos (inclui integração com PostgreSQL)
+# Todos (inclui integração com PostgreSQL; exclui E2E com LLM real)
 export TEST_DATABASE_URL=postgresql+psycopg://convertreino:convertreino@localhost:5432/convertreino_test
 export STRAVA_CLIENT_ID=fake-client-id
 export STRAVA_CLIENT_SECRET=fake-client-secret
 export STRAVA_REDIRECT_URI=http://localhost:8000/auth/strava/callback
-uv run pytest
+uv run pytest -m "not e2e"
 ```
+
+### E2E de acurácia do chat (SPEC-021)
+
+Testes nightly com LLM real que validam roteamento de intenção (`tool_calls_made`) contra a matriz em `tests/e2e/fixtures/chat_intent_matrix.yaml`. Excluídos do CI de PR.
+
+Requer `E2E_LLM=1` e a API key do provider ativo:
+
+| Variável | Descrição |
+|----------|-----------|
+| `E2E_LLM` | Deve ser `1` para habilitar os testes E2E (sem isso, são ignorados) |
+| `LLM_PROVIDER` | Opcional: `openai` ou `groq` — filtra um provider (nightly usa matrix) |
+| `OPENAI_API_KEY` | Obrigatória para casos com `provider=openai` |
+| `GROQ_API_KEY` | Obrigatória para casos com `provider=groq` |
+| `OPENAI_MODEL` | Default `gpt-4o-mini` |
+| `GROQ_MODEL` | Default `llama-3.3-70b-versatile` |
+
+```bash
+# OpenAI
+E2E_LLM=1 OPENAI_API_KEY=sk-... uv run pytest -m e2e --tb=short -v
+
+# Groq
+E2E_LLM=1 LLM_PROVIDER=groq GROQ_API_KEY=gsk_... uv run pytest -m e2e --tb=short -v
+```
+
+O job nightly (`.github/workflows/nightly.yml`) rota às 06:00 UTC, executa a matriz por provider e falha se a acurácia ficar abaixo de 90% (≥ 9/10 casos). Cada caso falho recebe 1 retry antes de contar como falha definitiva.
 
 ## API
 
