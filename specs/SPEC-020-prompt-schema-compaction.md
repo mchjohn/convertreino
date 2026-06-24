@@ -81,7 +81,7 @@ Esta spec formaliza a **separação de contratos**: MCP permanece verboso; chat 
 - Contrato HTTP `POST /chat/messages` (SPEC-014)
 - `period_resolver` server-side (roadmap SPEC-016+)
 - Mudança de nomes de tools ou parâmetros (`start_date`, `end_date`)
-- Testes E2E com LLM real no CI (padrão SPEC-014/017); eval de acurácia fica como smoke manual ou nightly futuro
+- Testes E2E com LLM real no CI de PR (padrão SPEC-014/017); eval de acurácia automatizada em SPEC-021 (nightly)
 - Alteração do loop tool-use, providers LLM ou tracing Phoenix (SPEC-017/019)
 - Dependência `tiktoken` ou métricas por modelo
 
@@ -205,7 +205,7 @@ Esta spec altera apenas o **contrato de prompt** enviado ao LLM, não o runtime 
 
 ### Matriz de intenções (referência de acurácia)
 
-Critério de aceite **manual** ou **nightly** — **não** teste de CI com LLM real. Preserva a matriz de intenções das SPECs MCP 010/012 nas fronteiras críticas: recorde vs volume, Run vs Ride.
+Critério de aceite **manual** (smoke Phoenix, SPEC-019) ou **automatizado em SPEC-021** (nightly com LLM real) — **não** teste de CI de PR com LLM real. Preserva a matriz de intenções das SPECs MCP 010/012 nas fronteiras críticas: recorde vs volume, Run vs Ride.
 
 | Pergunta exemplo | Tool esperada | Fronteira testada |
 |------------------|---------------|-------------------|
@@ -294,11 +294,11 @@ Substituir por:
 **Alternativas rejeitadas:** `tiktoken` por modelo.  
 **Motivo:** proxy suficiente para v1; redução proporcional em tokens reais.
 
-### Decisão: acurácia validada fora do CI
+### Decisão: acurácia validada fora do CI de PR
 **Contexto:** Como garantir que compactação não degrade seleção de tools.  
-**Opção escolhida:** matriz de intenções como critério manual + smoke Phoenix (SPEC-019).  
-**Alternativas rejeitadas:** LLM real no CI.  
-**Motivo:** alinhado a SPEC-014/017; evita flakes e custo.
+**Opção escolhida:** matriz de intenções como critério manual + smoke Phoenix (SPEC-019) + nightly automatizado (SPEC-021).  
+**Alternativas rejeitadas:** LLM real no CI de PR.  
+**Motivo:** alinhado a SPEC-014/017; evita flakes e custo no PR; regressões capturadas pelo nightly.
 
 ---
 
@@ -309,6 +309,10 @@ Substituir por:
 Após implementação desta spec, adicionar em **Decisões de Design** ou **Notas de Migração** de `specs/SPEC-014-chat-api.md` (sem reescrever o corpo da SPEC-014):
 
 > A decisão "Descrições de tools reutilizam constantes MCP sem duplicar texto" foi **superseded parcialmente** pela SPEC-020: o chat passa a usar descrições compactas dedicadas (`CHAT_*_DESCRIPTION`); MCP mantém descrições verbosas (`GET_*_DESCRIPTION`).
+
+### Roadmap: SPEC-021
+
+A matriz de intenções (§206-221) é automatizada pelo nightly de acurácia em **SPEC-021** (`tool_calls_made`, providers OpenAI + Groq).
 
 ### Ordem de execução pós-aprovação (SDD + TDD)
 

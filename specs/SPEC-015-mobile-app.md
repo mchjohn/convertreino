@@ -86,7 +86,7 @@ npx expo install expo-auth-session expo-secure-store
 - Persistência local de histórico de chat entre sessões (apenas memória em runtime; perde ao fechar app)
 - Logout formal / refresh token / re-OAuth automático por expiração JWT (apenas limpar sessão e redirecionar ao login)
 - Push notifications, widgets, gráficos, onboarding multi-step
-- `period_resolver.py` server-side → SPEC-016+ (condicional)
+- `period_resolver.py` server-side → SPEC-016+ (gatilho: CB-3 do nightly SPEC-021)
 - Publicação App Store / Play Store
 - Testes E2E Maestro/Detox com LLM real no CI → SPEC-017+
 - Alteração das MCP tools, orchestrator ou contratos de chat da SPEC-014
@@ -748,8 +748,9 @@ Testes mobile usam mocks de `fetch`, `expo-secure-store` e `react-native-gifted-
 | Spec futura | Conteúdo                                                                                    |
 |-------------|---------------------------------------------------------------------------------------------|
 | SPEC-017    | Groq Cloud como provider LLM alternativo                                                   |
-| SPEC-018    | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
-| SPEC-019+   | Streaming SSE, persistência de conversas, logout/refresh, rate limiting, testes E2E com LLM real, CI mobile |
+| SPEC-021    | E2E nightly de acurácia do chat com LLM real (backend)                                      |
+| SPEC-018    | `period_resolver` server-side (gatilho: CB-3 do nightly SPEC-021 falhar ≥ 3 noites em ambos providers) |
+| SPEC-019+   | Streaming SSE, persistência de conversas, logout/refresh, rate limiting, CI mobile E2E      |
 
 ---
 

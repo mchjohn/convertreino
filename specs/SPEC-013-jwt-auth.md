@@ -337,7 +337,7 @@ Nenhum persistido. Emissão e validação de JWT são operações em memória. O
 |-------------|---------------------------------------------------------------------------------------------|
 | SPEC-014    | API de chat (`POST /chat/messages`), `ChatOrchestrator`, abstração provider-agnostic LLM, injeção de `user_id` nas tools sem expor ao modelo |
 | SPEC-015    | App mobile Expo: OAuth Strava via deep link, sessão JWT, sync inicial e tela de chat       |
-| SPEC-016+   | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
+| SPEC-016+   | `period_resolver` server-side (gatilho: CB-3 do nightly SPEC-021 falhar ≥ 3 noites em ambos providers) |
 
 ---
 

@@ -8,7 +8,7 @@
 | **Criada em**  | 2026-06-19                                         |
 | **Camada**     | Application + Infra (config) + extensão mínima mobile |
 | **Depende de** | SPEC-014 (chat API, `LLMClient`, `OpenAICompatibleLLMClient`) |
-| **Bloqueia**   | Testes E2E com Groq real (futuro)                  |
+| **Bloqueia**   | SPEC-021 (E2E nightly com Groq real)               |
 | **Épico**      | Conversacional                                     |
 
 ---
@@ -324,8 +324,9 @@ Smoke test manual sugerido (não automatizado):
 
 | Spec futura | Conteúdo |
 |---|---|
-| SPEC-018 | `period_resolver` server-side (somente se testes E2E mostrarem falha na conversão de períodos pelo LLM) |
-| SPEC-019+ | Streaming SSE, persistência de conversas, rate limiting, testes E2E com LLM real |
+| SPEC-021 | E2E nightly de acurácia com Groq real — desbloqueia "Testes E2E com Groq real" |
+| SPEC-018 | `period_resolver` server-side (somente se CB-3 do nightly falhar ≥ 3 noites em ambos providers) |
+| SPEC-019+ | Streaming SSE, persistência de conversas, rate limiting |
 
 ---
 

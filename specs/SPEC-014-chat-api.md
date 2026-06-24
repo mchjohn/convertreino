@@ -8,7 +8,7 @@
 | **Criada em**  | 2026-06-19                                         |
 | **Camada**     | Application + API + Infra (config)                 |
 | **Depende de** | SPEC-001, SPEC-003, SPEC-007–012, SPEC-013         |
-| **Bloqueia**   | Testes E2E com LLM real (futuro), mobile chat UI   |
+| **Bloqueia**   | SPEC-021 (E2E nightly), mobile chat UI             |
 | **Épico**      | Conversacional                                     |
 
 ---
@@ -488,7 +488,8 @@ Padrão de override: `set_chat_orchestrator_override` em `dependencies.py`, espe
 |-------------|---------------------------------------------------------------------------------------------|
 | SPEC-015    | App mobile Expo: OAuth Strava via deep link, sessão JWT, sync inicial e tela de chat       |
 | SPEC-017    | Groq Cloud como provider LLM alternativo                                                   |
-| SPEC-018+   | `period_resolver` server-side, streaming SSE, persistência de conversas, rate limiting, testes E2E com LLM real |
+| SPEC-021    | E2E nightly de acurácia com LLM real (`tool_calls_made`, matriz SPEC-020) |
+| SPEC-018+   | `period_resolver` server-side, streaming SSE, persistência de conversas, rate limiting |
 
 ---
 

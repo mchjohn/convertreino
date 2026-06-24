@@ -15,3 +15,4 @@ mobile/ios
 mobile/android
 mobile/.env.*
 !mobile/.env.example
+mobile/.gitignore
