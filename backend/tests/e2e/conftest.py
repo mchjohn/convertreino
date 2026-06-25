@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from tests.e2e.accuracy import (
@@ -34,6 +36,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
     for line in accuracy_collector.report():
         print(line)
+
+    results_json = os.environ.get("E2E_RESULTS_JSON")
+    if results_json:
+        accuracy_collector.export_results_json(results_json)
 
     failing = accuracy_collector.below_threshold_providers()
     if failing:

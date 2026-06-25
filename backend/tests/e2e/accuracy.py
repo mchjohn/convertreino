@@ -1,6 +1,8 @@
+import json
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 
 ACCURACY_THRESHOLD = 0.90
 TEST_OPENAI_KEY = "test-openai-key"
@@ -51,6 +53,22 @@ class AccuracyCollector:
             if passed / len(outcomes) < ACCURACY_THRESHOLD:
                 failing.append(provider)
         return failing
+
+    def export_results_json(self, path: Path | str) -> None:
+        payload = {
+            "providers": {
+                provider: [
+                    {
+                        "case_id": item.case_id,
+                        "passed": item.passed,
+                        "detail": item.detail,
+                    }
+                    for item in outcomes
+                ]
+                for provider, outcomes in self.outcomes.items()
+            },
+        }
+        Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 accuracy_collector = AccuracyCollector()

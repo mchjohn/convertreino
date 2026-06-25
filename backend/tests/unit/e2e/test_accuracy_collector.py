@@ -1,3 +1,5 @@
+import json
+
 from tests.e2e.accuracy import ACCURACY_THRESHOLD, AccuracyCollector, CaseOutcome
 
 
@@ -34,3 +36,29 @@ def test_below_threshold_at_eighty_nine_percent_fails():
 
     assert collector.below_threshold_providers() == ["openai"]
     assert ACCURACY_THRESHOLD == 0.90
+
+
+def test_export_results_json(tmp_path):
+    collector = AccuracyCollector()
+    collector.record("groq", CaseOutcome("intent_greeting", True))
+    collector.record(
+        "groq",
+        CaseOutcome("intent_longest_run", False, "expected ['get_longest_run'], got []"),
+    )
+
+    path = tmp_path / "results.json"
+    collector.export_results_json(path)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload == {
+        "providers": {
+            "groq": [
+                {"case_id": "intent_greeting", "passed": True, "detail": None},
+                {
+                    "case_id": "intent_longest_run",
+                    "passed": False,
+                    "detail": "expected ['get_longest_run'], got []",
+                },
+            ],
+        },
+    }
