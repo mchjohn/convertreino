@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import yaml
 
-from convertreino.domain.entities.activity import Activity
-from tests.builders import build_activity
+if TYPE_CHECKING:
+    from convertreino.domain.entities.activity import Activity
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "chat_intent_matrix.yaml"
 
@@ -25,11 +28,9 @@ class IntentMatrixSeed:
     activities: tuple[Activity, ...]
 
 
-@dataclass(frozen=True, slots=True)
-class IntentMatrix:
-    version: int
-    seed: IntentMatrixSeed
-    cases: tuple[IntentCase, ...]
+def _load_yaml(path: Path = FIXTURE_PATH) -> dict:
+    with path.open(encoding="utf-8") as handle:
+        return yaml.safe_load(handle)
 
 
 def _parse_start_date(raw: str) -> datetime:
@@ -37,21 +38,8 @@ def _parse_start_date(raw: str) -> datetime:
 
 
 def load_intent_matrix(path: Path = FIXTURE_PATH) -> tuple[IntentCase, ...]:
-    with path.open(encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
-
-    user_id = UUID(data["seed"]["user_id"])
-    activities = tuple(
-        build_activity(
-            user_id=user_id,
-            activity_type=item["activity_type"],
-            distance_meters=item["distance_meters"],
-            start_date=_parse_start_date(item["start_date"]),
-        )
-        for item in data["seed"]["activities"]
-    )
-    seed = IntentMatrixSeed(user_id=user_id, activities=activities)
-    cases = tuple(
+    data = _load_yaml(path)
+    return tuple(
         IntentCase(
             id=item["id"],
             question=item["question"],
@@ -60,14 +48,12 @@ def load_intent_matrix(path: Path = FIXTURE_PATH) -> tuple[IntentCase, ...]:
         )
         for item in data["cases"]
     )
-    matrix = IntentMatrix(version=data["version"], seed=seed, cases=cases)
-    return matrix.cases
 
 
 def load_intent_matrix_seed(path: Path = FIXTURE_PATH) -> IntentMatrixSeed:
-    with path.open(encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
+    from tests.builders import build_activity
 
+    data = _load_yaml(path)
     user_id = UUID(data["seed"]["user_id"])
     activities = tuple(
         build_activity(

@@ -77,7 +77,11 @@ def write_job_summary(results_path: Path) -> None:
 
 
 def main() -> None:
-    raw_path = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("E2E_RESULTS_JSON", DEFAULT_RESULTS_PATH)
+    raw_path = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else os.environ.get("E2E_RESULTS_JSON", DEFAULT_RESULTS_PATH)
+    )
     results_path = Path(raw_path)
 
     if not results_path.is_file():
