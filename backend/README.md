@@ -182,28 +182,22 @@ uv run pytest -m "not e2e"
 
 ### E2E de acurácia do chat (SPEC-021)
 
-Testes nightly com LLM real que validam roteamento de intenção (`tool_calls_made`) contra a matriz em `tests/e2e/fixtures/chat_intent_matrix.yaml`. Excluídos do CI de PR.
+Testes nightly com LLM real (OpenAI) que validam roteamento de intenção (`tool_calls_made`) contra a matriz em `tests/e2e/fixtures/chat_intent_matrix.yaml`. Excluídos do CI de PR.
 
-Requer `E2E_LLM=1` e a API key do provider ativo:
+Requer `E2E_LLM=1` e `OPENAI_API_KEY`:
 
 | Variável | Descrição |
 |----------|-----------|
 | `E2E_LLM` | Deve ser `1` para habilitar os testes E2E (sem isso, são ignorados) |
-| `LLM_PROVIDER` | Opcional: `openai` ou `groq` — filtra um provider (nightly usa matrix) |
-| `OPENAI_API_KEY` | Obrigatória para casos com `provider=openai` |
-| `GROQ_API_KEY` | Obrigatória para casos com `provider=groq` |
+| `LLM_PROVIDER` | Opcional: default `openai` no nightly |
+| `OPENAI_API_KEY` | Obrigatória |
 | `OPENAI_MODEL` | Default `gpt-4o-mini` |
-| `GROQ_MODEL` | Default `llama-3.3-70b-versatile` |
 
 ```bash
-# OpenAI
 E2E_LLM=1 OPENAI_API_KEY=sk-... uv run pytest -m e2e --tb=short -v
-
-# Groq
-E2E_LLM=1 LLM_PROVIDER=groq GROQ_API_KEY=gsk_... uv run pytest -m e2e --tb=short -v
 ```
 
-O job nightly (`.github/workflows/nightly.yml`) rota às 06:00 UTC, executa a matriz por provider e falha se a acurácia ficar abaixo de 90% (≥ 9/10 casos). Cada caso falho recebe 1 retry antes de contar como falha definitiva.
+O job nightly (`.github/workflows/nightly.yml`) roda às 06:00 UTC, executa os 10 casos com OpenAI e falha se a acurácia ficar abaixo de 90% (≥ 9/10 casos). Cada caso falho recebe 1 retry antes de contar como falha definitiva.
 
 ## API
 

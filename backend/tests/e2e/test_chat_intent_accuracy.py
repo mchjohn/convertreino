@@ -127,7 +127,7 @@ def _require_provider(provider: str) -> None:
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize("provider", ["openai", "groq"])
+@pytest.mark.parametrize("provider", ["openai"])
 @pytest.mark.parametrize("case", load_intent_matrix(), ids=lambda c: c.id)
 def test_intent_routing_accuracy(
     case: IntentCase,

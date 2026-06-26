@@ -12,10 +12,6 @@ defaults:
 jobs:
   chat-accuracy:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        provider: [openai, groq]
 
     services:
       postgres:
@@ -34,11 +30,9 @@ jobs:
 
     env:
       E2E_LLM: "1"
-      LLM_PROVIDER: ${{ matrix.provider }}
+      LLM_PROVIDER: openai
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       OPENAI_MODEL: gpt-4o-mini
-      GROQ_MODEL: llama-3.3-70b-versatile
       JWT_SECRET: test-jwt-secret-for-nightly
       TEST_DATABASE_URL: postgresql+psycopg://convertreino:convertreino@localhost:5432/convertreino_test
       STRAVA_CLIENT_ID: fake-client-id
@@ -50,12 +44,8 @@ jobs:
 
       - name: Verify API key secret
         run: |
-          if [ "${{ matrix.provider }}" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
-            echo "::error::OPENAI_API_KEY secret is required for nightly chat accuracy (openai)"
-            exit 1
-          fi
-          if [ "${{ matrix.provider }}" = "groq" ] && [ -z "$GROQ_API_KEY" ]; then
-            echo "::error::GROQ_API_KEY secret is required for nightly chat accuracy (groq)"
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY secret is required for nightly chat accuracy"
             exit 1
           fi
 

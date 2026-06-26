@@ -29,7 +29,7 @@ flowchart TB
   end
   subgraph nightlyCI [Nightly - nightly.yml]
     Golden["golden dataset YAML"]
-    RealLLM["build_llm_client\nopenai | groq"]
+    RealLLM["build_llm_client\nopenai"]
     HTTP["POST /chat/messages"]
     Assert["assert tool_calls_made"]
   end
@@ -48,7 +48,7 @@ flowchart TB
 - Runner pytest parametrizado por `(case_id, provider)`
 - Marker `@pytest.mark.e2e` — **excluído do CI de PR** (`.github/workflows/ci.yml`)
 - Workflow `.github/workflows/nightly.yml` com `schedule` + `workflow_dispatch`
-- Matrix de providers: `openai` e `groq` (decisão confirmada)
+- Provider no nightly: `openai` (decisão confirmada)
 - Métrica primária: igualdade exata de `tool_calls_made` na response JSON
 - Dados determinísticos via `InMemoryActivityRepository` + `tests/builders` (acurácia de *roteamento*, não de dados Strava)
 - Relatório de acurácia no log do job (`passed/total`, lista de falhas)
@@ -146,7 +146,7 @@ A matriz é derivada de SPEC-020 §206-221 e preserva as fronteiras críticas: r
 ```python
 # backend/tests/e2e/test_chat_intent_accuracy.py
 @pytest.mark.e2e
-@pytest.mark.parametrize("provider", ["openai", "groq"])
+@pytest.mark.parametrize("provider", ["openai"])
 @pytest.mark.parametrize("case", load_intent_matrix(), ids=lambda c: c.id)
 def test_intent_routing_accuracy(case, provider): ...
 ```
@@ -177,7 +177,7 @@ Adicionar `-m "not e2e"` ao comando pytest em `.github/workflows/ci.yml` para ga
 #### Execução local
 
 ```bash
-# Requer OPENAI_API_KEY e/ou GROQ_API_KEY conforme provider
+# Requer OPENAI_API_KEY
 E2E_LLM=1 uv run pytest -m e2e --tb=short -v
 ```
 
@@ -187,13 +187,12 @@ Sem `E2E_LLM=1` ou sem API key do provider ativo: `pytest.skip` com mensagem exp
 
 | Parâmetro              | Valor                                                          |
 |------------------------|----------------------------------------------------------------|
-| Threshold mínimo       | **≥ 90%** (9/10 casos) por provider no job nightly             |
-| Condição de falha      | Job falha se **qualquer** provider ficar abaixo do threshold   |
+| Threshold mínimo       | **≥ 90%** (9/10 casos) no job nightly                          |
+| Condição de falha      | Job falha se a acurácia ficar abaixo do threshold             |
 | Retry por caso         | **1 retry** por caso falho antes de contar como falha definitiva |
 | Modelo OpenAI (pin)    | `gpt-4o-mini` via `OPENAI_MODEL` no workflow                   |
-| Modelo Groq (pin)      | `llama-3.3-70b-versatile` via `GROQ_MODEL` no workflow (SPEC-017) |
 
-O relatório final do job deve imprimir, por provider:
+O relatório final do job deve imprimir:
 
 ```
 Chat intent accuracy [openai]: 9/10 (90.0%)
@@ -211,28 +210,21 @@ on:
 
 jobs:
   chat-accuracy:
-    strategy:
-      matrix:
-        provider: [openai, groq]
     env:
-      LLM_PROVIDER: ${{ matrix.provider }}
+      LLM_PROVIDER: openai
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       OPENAI_MODEL: gpt-4o-mini
-      GROQ_MODEL: llama-3.3-70b-versatile
     steps:
       - # checkout, uv, postgres (igual ci.yml — serviço disponível mas E2E usa InMemory)
       - run: uv run pytest -m e2e --tb=short -v
       - # step de agregação: calcular passed/total, falhar job se < 90%
 ```
 
-**Secrets obrigatórios** no repositório GitHub: `OPENAI_API_KEY`, `GROQ_API_KEY`.
-
-Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
+**Secret obrigatório** no repositório GitHub: `OPENAI_API_KEY`.
 
 ### Efeitos colaterais
 
-- Chamadas HTTP reais aos providers OpenAI e Groq (custo e latência)
+- Chamadas HTTP reais ao provider OpenAI (custo e latência)
 - Nenhuma escrita em banco de produção; repositório in-memory apenas
 - Nenhum impacto em merge de PR
 
@@ -244,7 +236,7 @@ Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
 
 #### CN-1: Pergunta de recorde Run roteia corretamente
 **Dado** o golden dataset com caso `intent_longest_run`  
-**E** provider OpenAI ou Groq configurado com API key válida  
+**E** provider OpenAI configurado com API key válida  
 **Quando** `test_intent_routing_accuracy` envia `"Qual foi minha corrida mais longa?"`  
 **Então** `POST /chat/messages` retorna HTTP 200  
 **E** `tool_calls_made == ["get_longest_run"]`
@@ -260,16 +252,10 @@ Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
 **Então** `tool_calls_made == []`  
 **E** `message.content` não vazio (resposta direta do LLM)
 
-#### CN-4: Job nightly OpenAI atinge threshold
-**Dado** o workflow nightly com `matrix.provider == openai`  
-**Quando** todos os 10 casos são executados (com até 1 retry por falha)  
-**Então** acurácia ≥ 90% (≥ 9/10 casos passando)  
-**E** relatório impresso no log do job
-
-#### CN-5: Job nightly Groq atinge threshold
-**Dado** o workflow nightly com `matrix.provider == groq`  
-**Quando** todos os 10 casos são executados  
-**Então** acurácia ≥ 90%  
+#### CN-4: Job nightly atinge threshold
+**Dado** o workflow nightly com `LLM_PROVIDER=openai`
+**Quando** todos os 10 casos são executados (com até 1 retry por falha)
+**Então** acurácia ≥ 90% (≥ 9/10 casos passando)
 **E** relatório impresso no log do job
 
 ### Casos de borda (Edge Cases)
@@ -289,7 +275,7 @@ Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
 **Dado** os casos `intent_longest_run_with_period`, `intent_run_volume_this_week` e `intent_run_volume_count`  
 **Quando** perguntas incluem período relativo (*"essa semana"*, *"neste mês"*) ou absoluto (*"em 2024"*)  
 **Então** a tool correta é selecionada independentemente do período  
-**E** falhas recorrentes (≥ 3 noites consecutivas em **ambos** providers) disparam gatilho para abrir SPEC-016
+**E** falhas recorrentes (≥ 3 noites consecutivas) disparam gatilho para abrir SPEC-016
 
 ### Casos de erro
 
@@ -320,7 +306,7 @@ Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
 - [ ] Marker `e2e` registrado em `backend/pyproject.toml`
 - [ ] Testes em `backend/tests/e2e/test_chat_intent_accuracy.py`
 - [ ] CI PR exclui `-m "not e2e"`; nightly roda só `-m e2e`
-- [ ] Workflow `.github/workflows/nightly.yml` com schedule + matrix openai/groq
+- [ ] Workflow `.github/workflows/nightly.yml` com schedule + provider openai
 - [ ] README atualizado: variáveis, comando local (`E2E_LLM=1 uv run pytest -m e2e`)
 - [ ] Roadmaps de SPEC-014, SPEC-017 e SPEC-020 referenciam SPEC-021 como implementação do E2E adiado
 - [ ] Relatório de acurácia impresso ao final do job nightly
@@ -353,15 +339,15 @@ Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
 **Alternativas rejeitadas:** Postgres de teste com fixtures Strava.  
 **Motivo:** E2E testa seleção de intenção pelo LLM; dados analíticos já cobertos por unitários/integration.
 
-### Decisão: Dois jobs em matrix, não um job sequencial
-**Contexto:** Como executar OpenAI e Groq no nightly.  
-**Opção escolhida:** `strategy.matrix.provider: [openai, groq]` — jobs paralelos.  
-**Alternativas rejeitadas:** Um único job rodando ambos providers em sequência.  
-**Motivo:** Isolamento de falha; relatório e threshold independentes por provider.
+### Decisão: Job único com OpenAI no nightly
+**Contexto:** Como executar o provider LLM no nightly.  
+**Opção escolhida:** Job único com `LLM_PROVIDER=openai`.  
+**Alternativas rejeitadas:** Matrix com OpenAI e Groq em jobs paralelos; um job sequencial com ambos providers.  
+**Motivo:** Custo e latência menores; OpenAI como provider principal de referência para acurácia de roteamento.
 
 ### Decisão: Threshold 90%, não 100%
 **Contexto:** Variância inerente de modelos LLM em tool selection.  
-**Opção escolhida:** ≥ 90% (9/10) por provider; job falha abaixo disso.  
+**Opção escolhida:** ≥ 90% (9/10); job falha abaixo disso.  
 **Alternativas rejeitadas:** 100% obrigatório; threshold por caso individual.  
 **Motivo:** Tolerância a flakes ocasionais; falhas documentadas no log para investigação.
 
@@ -379,7 +365,7 @@ Dois jobs em matrix (não sequencial) — isolamento de falha por provider.
 
 ### Decisão: Gatilho SPEC-016 via CB-3
 **Contexto:** Quando abrir spec de `period_resolver` server-side.  
-**Opção escolhida:** Se casos com filtro temporal (CB-3) falharem ≥ 3 noites consecutivas em **ambos** providers, abrir SPEC-016.  
+**Opção escolhida:** Se casos com filtro temporal (CB-3) falharem ≥ 3 noites consecutivas, abrir SPEC-016.  
 **Alternativas rejeitadas:** Gatilho imediato após primeira falha; ignorar falhas de período.  
 **Motivo:** Evita decisão prematura por variância pontual; confirma padrão sistêmico de falha na conversão de períodos pelo LLM.
 
@@ -420,7 +406,6 @@ flowchart LR
 Adicionar ao repositório antes do primeiro nightly:
 
 - `OPENAI_API_KEY`
-- `GROQ_API_KEY`
 
 ---
 
@@ -440,7 +425,7 @@ Adicionar ao repositório antes do primeiro nightly:
 
 ### Consistência
 - [x] Não contradiz SPEC-014 (contrato HTTP, `tool_calls_made`)
-- [x] Compatível com providers OpenAI e Groq (SPEC-017)
+- [x] Compatível com provider OpenAI (SPEC-017 mantém Groq no app, fora do nightly)
 - [x] Matriz alinhada à SPEC-020 §206-221
 - [x] Padrão de override consistente com `test_chat_messages.py`
 
