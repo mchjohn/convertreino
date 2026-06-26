@@ -197,7 +197,7 @@ Requer `E2E_LLM=1` e `OPENAI_API_KEY`:
 E2E_LLM=1 OPENAI_API_KEY=sk-... uv run pytest -m e2e --tb=short -v
 ```
 
-O job nightly (`.github/workflows/nightly.yml`) roda às 06:00 UTC, executa os 10 casos com OpenAI e falha se a acurácia ficar abaixo de 90% (≥ 9/10 casos). Cada caso falho recebe 1 retry antes de contar como falha definitiva.
+O job nightly (`.github/workflows/nightly.yml`) é disparado manualmente via GitHub Actions (`workflow_dispatch`), executa os 10 casos com OpenAI e falha se a acurácia ficar abaixo de 90% (≥ 9/10 casos). Cada caso falho recebe 1 retry antes de contar como falha definitiva. No GitHub: **Actions** → **Nightly** → **Run workflow**; via CLI: `gh workflow run nightly.yml`.
 
 ## API
 

@@ -47,7 +47,7 @@ flowchart TB
 - Golden dataset versionado em YAML com os 10 casos da matriz SPEC-020 (expandível)
 - Runner pytest parametrizado por `(case_id, provider)`
 - Marker `@pytest.mark.e2e` — **excluído do CI de PR** (`.github/workflows/ci.yml`)
-- Workflow `.github/workflows/nightly.yml` com `schedule` + `workflow_dispatch`
+- Workflow `.github/workflows/nightly.yml` com `workflow_dispatch` (execução manual)
 - Provider no nightly: `openai` (decisão confirmada)
 - Métrica primária: igualdade exata de `tool_calls_made` na response JSON
 - Dados determinísticos via `InMemoryActivityRepository` + `tests/builders` (acurácia de *roteamento*, não de dados Strava)
@@ -204,8 +204,6 @@ Failures:
 
 ```yaml
 on:
-  schedule:
-    - cron: "0 6 * * *"   # 06:00 UTC diário
   workflow_dispatch:
 
 jobs:
@@ -306,7 +304,7 @@ jobs:
 - [ ] Marker `e2e` registrado em `backend/pyproject.toml`
 - [ ] Testes em `backend/tests/e2e/test_chat_intent_accuracy.py`
 - [ ] CI PR exclui `-m "not e2e"`; nightly roda só `-m e2e`
-- [ ] Workflow `.github/workflows/nightly.yml` com schedule + provider openai
+- [ ] Workflow `.github/workflows/nightly.yml` com `workflow_dispatch` + provider openai
 - [ ] README atualizado: variáveis, comando local (`E2E_LLM=1 uv run pytest -m e2e`)
 - [ ] Roadmaps de SPEC-014, SPEC-017 e SPEC-020 referenciam SPEC-021 como implementação do E2E adiado
 - [ ] Relatório de acurácia impresso ao final do job nightly
